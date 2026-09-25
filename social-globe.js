@@ -473,11 +473,12 @@
       return 1 / Math.max(rPx, 1);
     }
     // pinch/wheel: icon size; Bayer density (cells/px from center), not corner UV scale
-    var iconScale = 1;
+    // default = min pinch so icons start smallest
     var ICON_MIN = 0.55;
     var ICON_MAX = 1.9;
+    var iconScale = ICON_MIN;
     var pinchStartDist = 0;
-    var pinchStartScale = 1;
+    var pinchStartScale = ICON_MIN;
     var pinching = false;
 
     function touchDist(ev) {
