@@ -1339,3 +1339,36 @@ body.reel-page {
 .globe-light-debug .fld-save[data-state="saved"] .fld-save-txt { opacity: 0.7; color: #1a7a3c; }
 .globe-light-debug .fld-save[data-state="err"] .fld-save-txt { opacity: 0.9; color: #b00020; }
 
+
+
+/* save scope: local vs master */
+.fld-save-scope {
+  display: inline-block;
+  font-size: 10px;
+  line-height: 1;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: 999px;
+  margin-right: 6px;
+  opacity: 0.85;
+  border: 1px solid rgba(255,255,255,0.28);
+  color: rgba(255,255,255,0.75);
+  vertical-align: middle;
+}
+.fld-save-scope[data-scope="master"] {
+  color: #1a3a2a;
+  background: #7dffa3;
+  border-color: #7dffa3;
+  opacity: 1;
+  font-weight: 700;
+}
+.fld-save-scope[data-scope="local"] {
+  color: rgba(255,255,255,0.7);
+  background: rgba(0,0,0,0.18);
+}
+.feya-cam-panel .fld-save-scope,
+.feya-light-debug .fld-save-scope,
+.globe-light-debug .fld-save-scope {
+  font-family: inherit;
+}

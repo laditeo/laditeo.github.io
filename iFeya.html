@@ -65,19 +65,19 @@
             </div>
             <div class="fld-col">
               <span class="fld-label">hemi</span>
-              <input type="range" id="fld-hemi" min="0" max="3" step="0.01" value="0.71" orient="vertical">
-              <output id="fld-hemi-val" for="fld-hemi">0.71</output>
+              <input type="range" id="fld-hemi" min="0" max="3" step="0.01" value="0.29" orient="vertical">
+              <output id="fld-hemi-val" for="fld-hemi">0.29</output>
             </div>
             <div class="fld-col">
               <span class="fld-label">key</span>
-              <input type="range" id="fld-key" min="0" max="3" step="0.01" value="1.40" orient="vertical">
-              <output id="fld-key-val" for="fld-key">1.40</output>
+              <input type="range" id="fld-key" min="0" max="3" step="0.01" value="0.83" orient="vertical">
+              <output id="fld-key-val" for="fld-key">0.83</output>
             </div>
 
             <div class="fld-col">
               <span class="fld-label">bk</span>
-              <input type="range" id="fld-bk" min="0" max="3" step="0.01" value="0.85" orient="vertical" title="back-left lamp intensity">
-              <output id="fld-bk-val" for="fld-bk">0.85</output>
+              <input type="range" id="fld-bk" min="0" max="3" step="0.01" value="1.12" orient="vertical" title="back-left lamp intensity">
+              <output id="fld-bk-val" for="fld-bk">1.12</output>
             </div>
             <div class="fld-hsv" data-hsv="bk">
               <span class="fld-label">bk</span>
@@ -112,8 +112,8 @@
             </div>
             <div class="fld-col">
               <span class="fld-label">emis</span>
-              <input type="range" id="fld-emis" min="0" max="3" step="0.01" value="1.15" orient="vertical">
-              <output id="fld-emis-val" for="fld-emis">1.15</output>
+              <input type="range" id="fld-emis" min="0" max="3" step="0.01" value="0.93" orient="vertical">
+              <output id="fld-emis-val" for="fld-emis">0.93</output>
             </div>
 
             <div class="fld-hsv" data-hsv="sh">
@@ -126,22 +126,22 @@
                 </div>
                 <div class="fld-hsv-one">
                   <span class="fld-sub">S</span>
-                  <input type="range" id="fld-shS" min="0" max="100" step="1" value="72" orient="vertical">
-                  <output id="fld-shS-val" for="fld-shS">72</output>
+                  <input type="range" id="fld-shS" min="0" max="100" step="1" value="88" orient="vertical">
+                  <output id="fld-shS-val" for="fld-shS">88</output>
                 </div>
                 <div class="fld-hsv-one">
                   <span class="fld-sub">V</span>
-                  <input type="range" id="fld-shV" min="0" max="100" step="1" value="87" orient="vertical">
-                  <output id="fld-shV-val" for="fld-shV">87</output>
+                  <input type="range" id="fld-shV" min="0" max="100" step="1" value="52" orient="vertical">
+                  <output id="fld-shV-val" for="fld-shV">52</output>
                 </div>
               </div>
-              <output id="fld-shColor-val" class="fld-hsv-hex">#de5e3e</output>
+              <output id="fld-shColor-val" class="fld-hsv-hex">#852710</output>
             </div>
 
             <div class="fld-col">
               <span class="fld-label">shOp</span>
-              <input type="range" id="fld-shOp" min="0" max="3" step="0.01" value="1.54" orient="vertical">
-              <output id="fld-shOp-val" for="fld-shOp">1.54</output>
+              <input type="range" id="fld-shOp" min="0" max="3" step="0.01" value="0.63" orient="vertical">
+              <output id="fld-shOp-val" for="fld-shOp">0.63</output>
             </div>
             <div class="fld-col">
               <span class="fld-label">shA</span>
@@ -150,8 +150,8 @@
             </div>
             <div class="fld-col">
               <span class="fld-label">shFall</span>
-              <input type="range" id="fld-shFall" min="0.15" max="3" step="0.01" value="1.02" orient="vertical" title="shadow falloff">
-              <output id="fld-shFall-val" for="fld-shFall">1.02</output>
+              <input type="range" id="fld-shFall" min="0.15" max="3" step="0.01" value="1.16" orient="vertical" title="shadow falloff">
+              <output id="fld-shFall-val" for="fld-shFall">1.16</output>
             </div>
 
             <div class="fld-hsv" data-hsv="lit">
@@ -187,6 +187,7 @@
             </div>
             <div class="fld-save" id="fld-save" aria-live="polite">
               <span class="fld-save-spin" aria-hidden="true"></span>
+              <span class="fld-save-scope" id="fld-save-scope" title="local = только этот браузер; master = глобально для всех">local</span>
               <span class="fld-save-txt" id="fld-save-status">ready</span>
             </div>
           </aside>
@@ -226,26 +227,27 @@
             </div>
             <div class="fld-col">
               <span class="fld-label">grain</span>
-              <input type="range" id="fld-gGrain" min="1" max="24" step="1" value="6" orient="vertical" title="dither grain size">
-              <output id="fld-gGrain-val" for="fld-gGrain">6</output>
+              <input type="range" id="fld-gGrain" min="1" max="24" step="1" value="1" orient="vertical" title="dither grain size">
+              <output id="fld-gGrain-val" for="fld-gGrain">1</output>
             </div>
             <div class="fld-col">
               <span class="fld-label">nAmp</span>
-              <input type="range" id="fld-gNAmp" min="0" max="1.2" step="0.01" value="0.35" orient="vertical" title="turbulence strength">
-              <output id="fld-gNAmp-val" for="fld-gNAmp">0.35</output>
+              <input type="range" id="fld-gNAmp" min="0" max="1.2" step="0.01" value="0.93" orient="vertical" title="turbulence strength">
+              <output id="fld-gNAmp-val" for="fld-gNAmp">0.93</output>
             </div>
             <div class="fld-col">
               <span class="fld-label">nScale</span>
-              <input type="range" id="fld-gNScale" min="0.2" max="4" step="0.01" value="1.35" orient="vertical" title="noise scale">
-              <output id="fld-gNScale-val" for="fld-gNScale">1.35</output>
+              <input type="range" id="fld-gNScale" min="0.2" max="4" step="0.01" value="0.20" orient="vertical" title="noise scale">
+              <output id="fld-gNScale-val" for="fld-gNScale">0.20</output>
             </div>
             <div class="fld-col">
               <span class="fld-label">nSpd</span>
-              <input type="range" id="fld-gNSpd" min="0" max="1.5" step="0.01" value="0.18" orient="vertical" title="noise rotation speed (around globe center)">
-              <output id="fld-gNSpd-val" for="fld-gNSpd">0.18</output>
+              <input type="range" id="fld-gNSpd" min="0" max="1.5" step="0.01" value="1.50" orient="vertical" title="noise rotation speed (around globe center)">
+              <output id="fld-gNSpd-val" for="fld-gNSpd">1.50</output>
             </div>
             <div class="fld-save" id="fld-g-save" aria-live="polite">
               <span class="fld-save-spin" aria-hidden="true"></span>
+              <span class="fld-save-scope" id="fld-g-save-scope" title="local = только этот браузер; master = глобально для всех">local</span>
               <span class="fld-save-txt" id="fld-g-save-status">ready</span>
             </div>
           </aside>
@@ -258,6 +260,6 @@
     </section>
 </div>
 
-<script src="./art_2.js?v=perfQuiet"></script>
-<script src="./33.js?v=perfQuiet"></script>
-<script src="./social-globe.js?v=perfQuiet"></script>
+<script src="./art_2.js?v=masterSave"></script>
+<script src="./33.js?v=masterSave"></script>
+<script src="./social-globe.js?v=masterSave"></script>

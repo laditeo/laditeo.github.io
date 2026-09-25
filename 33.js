@@ -1051,72 +1051,140 @@
 			sync({ rebuild: true });
 		})();
 
-	// Auto-save debug sliders → localStorage (+ spinner)
+	// Auto-save debug sliders → localStorage (+ master JSON when IP allowed)
 	(function bindFeyaDebugPersist() {
 		var panel = document.getElementById('feya-light-debug');
 		var statusEl = document.getElementById('fld-save-status');
+		var scopeEl = document.getElementById('fld-save-scope');
 		var wrap = document.getElementById('fld-save');
 		if (!panel) return;
-		var KEY = 'laditeo.feyaDebug.v3';
+		var KEY = 'laditeo.feyaDebug.v5';
+		var MASTER_URL = '/api/feya-debug';
+		var isMaster = false;
 		var FIELDS = [
 			'fld-amb','fld-hemi','fld-key','fld-bk','fld-res','fld-snap','fld-emis',
 			'fld-shH','fld-shS','fld-shV','fld-shOp','fld-shA','fld-shFall',
 			'fld-lh','fld-ls','fld-lv','fld-bkH','fld-bkS','fld-bkV',
 			'fld-camMin','fld-camMax'
 		];
+		var TO_SHORT = {
+			'fld-amb':'amb','fld-hemi':'hemi','fld-key':'key','fld-bk':'bk',
+			'fld-res':'res','fld-snap':'snap','fld-emis':'emis',
+			'fld-shH':'shH','fld-shS':'shS','fld-shV':'shV','fld-shOp':'shOp',
+			'fld-shA':'shA','fld-shFall':'shFall',
+			'fld-lh':'lh','fld-ls':'ls','fld-lv':'lv',
+			'fld-bkH':'bkH','fld-bkS':'bkS','fld-bkV':'bkV',
+			'fld-camMin':'camMin','fld-camMax':'camMax'
+		};
 		function setStatus(state, text) {
 			if (wrap) wrap.dataset.state = state;
 			if (statusEl) statusEl.textContent = text;
 		}
-		function collect() {
-			var o = { v: 3, t: Date.now() };
+		function setScope(master) {
+			isMaster = !!master;
+			if (!scopeEl) return;
+			scopeEl.textContent = master ? 'master' : 'local';
+			scopeEl.dataset.scope = master ? 'master' : 'local';
+			scopeEl.title = master
+				? 'master: сейв пишет глобальные дефолты для всех'
+				: 'local: сейв только в этом браузере';
+		}
+		function collectLocal() {
+			var o = { v: 5, t: Date.now() };
 			for (var i = 0; i < FIELDS.length; i++) {
 				var el = document.getElementById(FIELDS[i]);
 				if (el) o[FIELDS[i]] = el.value;
 			}
 			return o;
 		}
-		function apply(data) {
+		function collectMaster() {
+			var o = { v: 3, t: Date.now() };
+			for (var id in TO_SHORT) {
+				if (!Object.prototype.hasOwnProperty.call(TO_SHORT, id)) continue;
+				var el = document.getElementById(id);
+				if (!el) continue;
+				var n = parseFloat(el.value);
+				o[TO_SHORT[id]] = isFinite(n) ? n : el.value;
+			}
+			var shHex = document.getElementById('fld-shColor-val');
+			var litHex = document.getElementById('fld-color-val');
+			var bkHex = document.getElementById('fld-bkColor-val');
+			if (shHex) o.shHex = (shHex.textContent || '').trim();
+			if (litHex) o.litHex = (litHex.textContent || '').trim();
+			if (bkHex) o.bkHex = (bkHex.textContent || '').trim();
+			return o;
+		}
+		function applyFieldMap(data, useShort) {
 			if (!data) return;
 			for (var i = 0; i < FIELDS.length; i++) {
 				var id = FIELDS[i];
-				if (data[id] == null) continue;
+				var key = useShort ? TO_SHORT[id] : id;
+				if (data[key] == null && data[id] != null) key = id;
+				if (data[key] == null) continue;
 				var el = document.getElementById(id);
 				if (!el) continue;
-				el.value = String(data[id]);
+				el.value = String(data[key]);
 				el.dispatchEvent(new Event('input', { bubbles: true }));
 			}
 		}
-		try {
-			var raw = localStorage.getItem(KEY);
-			if (raw) apply(JSON.parse(raw));
-		} catch (e) {}
-		var timer = null;
 		function scheduleSave() {
 			setStatus('saving', 'saving…');
 			clearTimeout(timer);
 			timer = setTimeout(function () {
 				try {
-					localStorage.setItem(KEY, JSON.stringify(collect()));
-					setStatus('saved', 'saved');
+					localStorage.setItem(KEY, JSON.stringify(collectLocal()));
 				} catch (err) {
 					setStatus('err', 'err');
+					return;
 				}
+				if (!isMaster) {
+					setStatus('saved', 'saved · local');
+					return;
+				}
+				fetch(MASTER_URL + '/feya', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify(collectMaster()),
+					credentials: 'same-origin'
+				}).then(function (r) {
+					if (!r.ok) throw new Error('http ' + r.status);
+					setStatus('saved', 'saved · master');
+				}).catch(function () {
+					setStatus('err', 'local ok · master fail');
+				});
 			}, 420);
 		}
+		var timer = null;
 		panel.addEventListener('input', scheduleSave);
-		// seed current baked defaults so first paint is also persisted
-		try {
-			if (!localStorage.getItem(KEY)) {
-				localStorage.setItem(KEY, JSON.stringify(collect()));
-				setStatus('saved', 'saved');
-			} else {
+		setScope(false);
+		setStatus('ready', 'ready');
+
+		function boot() {
+			var chain = Promise.resolve();
+			chain = chain.then(function () {
+				return fetch(MASTER_URL + '/status', { credentials: 'same-origin', cache: 'no-store' })
+					.then(function (r) { return r.ok ? r.json() : null; })
+					.then(function (j) { if (j) setScope(!!j.master); })
+					.catch(function () {});
+			});
+			chain = chain.then(function () {
+				return fetch('/feya-debug.json', { cache: 'no-store' })
+					.then(function (r) { return r.ok ? r.json() : null; })
+					.then(function (j) { if (j) applyFieldMap(j, true); })
+					.catch(function () {});
+			});
+			chain = chain.then(function () {
+				try {
+					var raw = localStorage.getItem(KEY);
+					if (raw) applyFieldMap(JSON.parse(raw), false);
+				} catch (e) {}
 				setStatus('ready', 'ready');
-			}
-		} catch (e2) {
-			setStatus('ready', 'ready');
+			});
+			return chain;
 		}
+		boot();
 	})();
+
 
 		
 

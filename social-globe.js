@@ -811,7 +811,7 @@
       }
     }
 
-    // Debug sliders under globe + autosave
+    // Debug sliders under globe + autosave (+ master when IP allowed)
     (function bindGlobeDebug() {
       var wrap = document.getElementById('social-globe');
       var panel = document.getElementById('globe-light-debug');
@@ -826,13 +826,21 @@
       var nScaleEl = document.getElementById('fld-gNScale');
       var nSpdEl = document.getElementById('fld-gNSpd');
       var statusEl = document.getElementById('fld-g-save-status');
+      var scopeEl = document.getElementById('fld-g-save-scope');
       var saveWrap = document.getElementById('fld-g-save');
       if (!wrap) return;
-      var KEY = 'laditeo.globeDebug.v3';
+      var KEY = 'laditeo.globeDebug.v5';
+      var MASTER_URL = '/api/feya-debug';
+      var isMaster = false;
       var FIELDS = [
         'fld-gGap','fld-gSize','fld-gIcon','fld-gFall','fld-gFog','fld-gDith','fld-gGrain',
         'fld-gNAmp','fld-gNScale','fld-gNSpd'
       ];
+      var TO_SHORT = {
+        'fld-gGap':'gap','fld-gSize':'size','fld-gIcon':'icon','fld-gFall':'fall',
+        'fld-gFog':'fog','fld-gDith':'dith','fld-gGrain':'grain',
+        'fld-gNAmp':'nAmp','fld-gNScale':'nScale','fld-gNSpd':'nSpd'
+      };
       function setOut(id, text) {
         var o = document.getElementById(id);
         if (o) o.textContent = text;
@@ -841,28 +849,46 @@
         if (saveWrap) saveWrap.dataset.state = state;
         if (statusEl) statusEl.textContent = text;
       }
-      function collect() {
-        var o = { v: 1, t: Date.now() };
+      function setScope(master) {
+        isMaster = !!master;
+        if (!scopeEl) return;
+        scopeEl.textContent = master ? 'master' : 'local';
+        scopeEl.dataset.scope = master ? 'master' : 'local';
+        scopeEl.title = master
+          ? 'master: сейв пишет глобальные дефолты для всех'
+          : 'local: сейв только в этом браузере';
+      }
+      function collectLocal() {
+        var o = { v: 5, t: Date.now() };
         for (var i = 0; i < FIELDS.length; i++) {
           var el = document.getElementById(FIELDS[i]);
           if (el) o[FIELDS[i]] = el.value;
         }
         return o;
       }
-      function applyStored(data) {
+      function collectMaster() {
+        var o = { t: Date.now() };
+        for (var id in TO_SHORT) {
+          if (!Object.prototype.hasOwnProperty.call(TO_SHORT, id)) continue;
+          var el = document.getElementById(id);
+          if (!el) continue;
+          var n = parseFloat(el.value);
+          o[TO_SHORT[id]] = isFinite(n) ? n : el.value;
+        }
+        return o;
+      }
+      function applyStored(data, useShort) {
         if (!data) return;
         for (var i = 0; i < FIELDS.length; i++) {
           var id = FIELDS[i];
-          if (data[id] == null) continue;
+          var key = useShort ? TO_SHORT[id] : id;
+          if (data[key] == null && data[id] != null) key = id;
+          if (data[key] == null) continue;
           var el = document.getElementById(id);
           if (!el) continue;
-          el.value = String(data[id]);
+          el.value = String(data[key]);
         }
       }
-      try {
-        var raw = localStorage.getItem(KEY);
-        if (raw) applyStored(JSON.parse(raw));
-      } catch (e) {}
       function sync() {
         var gap = gapEl ? parseFloat(gapEl.value) : 22;
         var sz = sizeEl ? Math.round(parseFloat(sizeEl.value)) : 360;
@@ -870,10 +896,10 @@
         var fall = fallEl ? parseFloat(fallEl.value) : 2.47;
         var fog = fogEl ? parseFloat(fogEl.value) : 1;
         var dith = dithEl ? parseFloat(dithEl.value) : 1;
-        var grain = grainEl ? parseFloat(grainEl.value) : 6;
-        var nAmp = nAmpEl ? parseFloat(nAmpEl.value) : 0.35;
-        var nScale = nScaleEl ? parseFloat(nScaleEl.value) : 1.35;
-        var nSpd = nSpdEl ? parseFloat(nSpdEl.value) : 0.18;
+        var grain = grainEl ? parseFloat(grainEl.value) : 1;
+        var nAmp = nAmpEl ? parseFloat(nAmpEl.value) : 0.93;
+        var nScale = nScaleEl ? parseFloat(nScaleEl.value) : 0.2;
+        var nSpd = nSpdEl ? parseFloat(nSpdEl.value) : 1.5;
         wrap.style.marginTop = gap + 'px';
         wrap.style.width = sz + 'px';
         wrap.style.maxWidth = sz + 'px';
@@ -916,11 +942,26 @@
         clearTimeout(timer);
         timer = setTimeout(function () {
           try {
-            localStorage.setItem(KEY, JSON.stringify(collect()));
-            setStatus('saved', 'saved');
+            localStorage.setItem(KEY, JSON.stringify(collectLocal()));
           } catch (err) {
             setStatus('err', 'err');
+            return;
           }
+          if (!isMaster) {
+            setStatus('saved', 'saved · local');
+            return;
+          }
+          fetch(MASTER_URL + '/globe', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(collectMaster()),
+            credentials: 'same-origin'
+          }).then(function (r) {
+            if (!r.ok) throw new Error('http ' + r.status);
+            setStatus('saved', 'saved · master');
+          }).catch(function () {
+            setStatus('err', 'local ok · master fail');
+          });
         }, 420);
       }
       if (panel) {
@@ -933,17 +974,29 @@
           if (el) el.addEventListener('input', function () { sync(); scheduleSave(); });
         });
       }
-      sync();
-      try {
-        if (!localStorage.getItem(KEY)) {
-          localStorage.setItem(KEY, JSON.stringify(collect()));
-          setStatus('saved', 'saved');
-        } else {
-          setStatus('ready', 'ready');
-        }
-      } catch (e2) {
-        setStatus('ready', 'ready');
+      setScope(false);
+      setStatus('ready', 'ready');
+      function boot() {
+        return fetch(MASTER_URL + '/status', { credentials: 'same-origin', cache: 'no-store' })
+          .then(function (r) { return r.ok ? r.json() : null; })
+          .then(function (j) { if (j) setScope(!!j.master); })
+          .catch(function () {})
+          .then(function () {
+            return fetch('/globe-debug.json', { cache: 'no-store' })
+              .then(function (r) { return r.ok ? r.json() : null; })
+              .then(function (j) { if (j) applyStored(j, true); })
+              .catch(function () {});
+          })
+          .then(function () {
+            try {
+              var raw = localStorage.getItem(KEY);
+              if (raw) applyStored(JSON.parse(raw), false);
+            } catch (e) {}
+            sync();
+            setStatus('ready', 'ready');
+          });
       }
+      boot();
     })();
 
     tick();

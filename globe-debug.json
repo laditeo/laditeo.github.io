@@ -5,5 +5,8 @@
   "fall": 2.47,
   "fog": 1.0,
   "dith": 1,
-  "grain": 1
+  "grain": 1,
+  "nAmp": 0.93,
+  "nScale": 0.2,
+  "nSpd": 1.5
 }
