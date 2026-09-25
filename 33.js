@@ -625,6 +625,95 @@
 		return /tea|cha(\.|$)|stream|pour|liquid/i.test(n);
 	}
 
+	// Tea stream (Cube.004): bind pose is a point; shape is 334 morph targets.
+	// Three WebGL2 packs morphs into DataTexture2DArray (one layer per target).
+	// Many Android GPUs cap MAX_ARRAY_TEXTURE_LAYERS at 256 → texture fails → invisible.
+	// This mesh has ~34 verts, so apply morphs on CPU and disable the GPU morph path.
+	var feyaCpuMorphs = [];
+	function shouldCpuMorph(geometry) {
+		var morphPos = geometry.morphAttributes && geometry.morphAttributes.position;
+		var n = morphPos ? morphPos.length : 0;
+		if (n <= 8) return false;
+		var vcount = geometry.attributes.position ? geometry.attributes.position.count : 0;
+		if (vcount > 0 && vcount <= 256) return true; // tiny streams / drips
+		try {
+			if (!renderer.capabilities.isWebGL2) return true;
+			var gl = renderer.getContext();
+			var maxLayers = gl.getParameter(gl.MAX_ARRAY_TEXTURE_LAYERS) || 256;
+			return n > maxLayers;
+		} catch (e) {
+			return true;
+		}
+	}
+	function bindCpuMorphs(root) {
+		feyaCpuMorphs.length = 0;
+		root.traverse(function (obj) {
+			if (!obj.isMesh || !obj.geometry) return;
+			var geo = obj.geometry;
+			if (!shouldCpuMorph(geo)) return;
+			var morphPos = geo.morphAttributes.position;
+			if (!morphPos || !morphPos.length) return;
+			var base = geo.attributes.position.clone();
+			feyaCpuMorphs.push({
+				mesh: obj,
+				base: base,
+				morphPos: morphPos,
+				relative: !!geo.morphTargetsRelative
+			});
+			// stop GPU morph path (attribute or 2D-array texture)
+			geo.morphAttributes = {};
+			if (obj.material) {
+				var mats = Array.isArray(obj.material) ? obj.material : [obj.material];
+				for (var i = 0; i < mats.length; i++) {
+					if (!mats[i]) continue;
+					mats[i].morphTargets = false;
+					mats[i].morphNormals = false;
+					mats[i].needsUpdate = true;
+					// tea is BLEND — keep stream readable on mobile
+					if (isTeaLiquidMat(mats[i], obj)) {
+						mats[i].depthWrite = false;
+						mats[i].transparent = true;
+					}
+				}
+			}
+			console.info('[feya] CPU morph fallback', obj.name || '(mesh)', 'targets', morphPos.length, 'verts', base.count);
+		});
+	}
+	function applyCpuMorphs() {
+		for (var m = 0; m < feyaCpuMorphs.length; m++) {
+			var entry = feyaCpuMorphs[m];
+			var mesh = entry.mesh;
+			var inf = mesh.morphTargetInfluences;
+			if (!inf) continue;
+			var posAttr = mesh.geometry.attributes.position;
+			var out = posAttr.array;
+			var baseArr = entry.base.array;
+			var morphPos = entry.morphPos;
+			var vcount = entry.base.count;
+			var sum = 0;
+			for (var i = 0; i < inf.length; i++) sum += inf[i] || 0;
+			var baseInf = entry.relative ? 1 : 1 - sum;
+			for (var v = 0; v < vcount; v++) {
+				var i3 = v * 3;
+				var x = baseArr[i3] * baseInf;
+				var y = baseArr[i3 + 1] * baseInf;
+				var z = baseArr[i3 + 2] * baseInf;
+				for (var t = 0; t < morphPos.length; t++) {
+					var w = inf[t];
+					if (!w) continue;
+					var a = morphPos[t].array;
+					x += a[i3] * w;
+					y += a[i3 + 1] * w;
+					z += a[i3 + 2] * w;
+				}
+				out[i3] = x;
+				out[i3 + 1] = y;
+				out[i3 + 2] = z;
+			}
+			posAttr.needsUpdate = true;
+		}
+	}
+
 	function applyPS1ToObject(root) {
 		root.traverse(function (obj) {
 			if (!obj.isMesh) return;
@@ -769,6 +858,7 @@
 		mesh.rotation.y = 91;
     mesh.position.y = -4.7;
 		applyPS1ToObject(mesh);
+		bindCpuMorphs(mesh);
 		var emisEl = document.getElementById('fld-emis');
 		applyFeyaEmissive(emisEl ? parseFloat(emisEl.value) : 1);
 		bootShadow = makeBootShadow();
@@ -925,6 +1015,7 @@
 			if (mixer) mixer.update(FEYA_FIXED_DT * FEYA_ANIM_RATE);
 			feyaAnimAcc -= FEYA_FIXED_DT;
 		}
+		applyCpuMorphs();
 		if (controls) controls.update();
 		tickFeyaFovSpring();
 		if (typeof updateFeyaDebugSpoilerGate === 'function') updateFeyaDebugSpoilerGate();
