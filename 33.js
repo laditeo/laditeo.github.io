@@ -345,7 +345,7 @@
 		var yEl = document.getElementById('fld-camY');
 		var tiltEl = document.getElementById('fld-camTilt');
 		var speedEl = document.getElementById('fld-animSpeed');
-		var KEY = 'laditeo.feyaCamPanel.v2';
+		var KEY = 'laditeo.feyaCamPanel.v3';
 		function setOut(id, text) {
 			var o = document.getElementById(id);
 			if (o) o.textContent = text;
@@ -408,6 +408,7 @@
 			setOut('fld-animSpeed-val', s.toFixed(2) + '×');
 		}
 		function collect() {
+			// Slider prefs only — live pinch/orbit framing stays ephemeral
 			return {
 				v: 1,
 				fovLo: fovLoEl.value,
@@ -416,8 +417,7 @@
 				zoomHi: zoomHiEl.value,
 				camY: yEl.value,
 				camTilt: tiltEl.value,
-				animSpeed: speedEl ? speedEl.value : '1',
-				zoom: feyaZoom
+				animSpeed: speedEl ? speedEl.value : '1'
 			};
 		}
 		var statusEl = document.getElementById('fld-cam-save-status');
@@ -435,9 +435,9 @@
 			if (data.camY != null) yEl.value = String(data.camY);
 			if (data.camTilt != null) tiltEl.value = String(data.camTilt);
 			if (data.animSpeed != null && speedEl) speedEl.value = String(data.animSpeed);
-			if (typeof data.zoom === 'number' && isFinite(data.zoom)) feyaZoom = data.zoom;
+			// Restore slider prefs only — do not applyFeyaZoom (keeps load pose;
+			// pinch framing is never persisted). Height/tilt sliders still apply.
 			readLimits();
-			applyFeyaZoom(feyaZoom);
 			onY();
 			onTilt();
 			onSpeed();
@@ -475,12 +475,7 @@
 		yEl.addEventListener('input', function () { onY(); scheduleSave(); });
 		tiltEl.addEventListener('input', function () { onTilt(); scheduleSave(); });
 		if (speedEl) speedEl.addEventListener('input', function () { onSpeed(); scheduleSave(); });
-		// persist zoom after pinch settles
-		var _apply = applyFeyaZoom;
-		applyFeyaZoom = function (z) {
-			_apply(z);
-			scheduleSave();
-		};
+		// Pinch/multitouch framing is ephemeral — do not scheduleSave from applyFeyaZoom
 		// seed defaults like light/globe panels
 		try {
 			if (!localStorage.getItem(KEY)) {
