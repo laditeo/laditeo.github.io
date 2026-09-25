@@ -36,6 +36,8 @@ THREE.OrbitControls = function ( object, domElement ) {
 	// How far you can orbit vertically, upper and lower limits.
 	// Range is 0 to Math.PI radians.
 	this.minPolarAngle = 0; // radians
+	/** Soft slowdown band near polar limits (radians). 0 = hard clamp only. */
+	this.polarSoftZone = 0.2; // ~11.5°
 	this.maxPolarAngle = Math.PI; // radians
 
 	// How far you can orbit horizontally, upper and lower limits.
@@ -152,7 +154,34 @@ THREE.OrbitControls = function ( object, domElement ) {
 			}
 
 			spherical.theta += sphericalDelta.theta;
-			spherical.phi += sphericalDelta.phi;
+
+			// Soft polar edges: ease phi delta when approaching min/max (directional)
+			(function softPolar() {
+				var zone = scope.polarSoftZone || 0;
+				var dPhi = sphericalDelta.phi;
+				if (zone > 0 && dPhi !== 0) {
+					var phi = spherical.phi;
+					var minP = scope.minPolarAngle;
+					var maxP = scope.maxPolarAngle;
+					var ease = 1;
+					// moving toward min (phi decreasing in three's rotateUp convention: dPhi can be +/-)
+					if (dPhi < 0) {
+						var distMin = phi - minP;
+						if (distMin < zone) {
+							var t = Math.max(0, Math.min(1, distMin / zone));
+							ease = t * t * (3 - 2 * t); // smoothstep
+						}
+					} else if (dPhi > 0) {
+						var distMax = maxP - phi;
+						if (distMax < zone) {
+							var t2 = Math.max(0, Math.min(1, distMax / zone));
+							ease = t2 * t2 * (3 - 2 * t2);
+						}
+					}
+					dPhi *= ease; // allow full stop at soft edge (no residual slam)
+				}
+				spherical.phi += dPhi;
+			})();
 
 			// restrict theta to be between desired limits
 			spherical.theta = Math.max( scope.minAzimuthAngle, Math.min( scope.maxAzimuthAngle, spherical.theta ) );
@@ -227,9 +256,9 @@ THREE.OrbitControls = function ( object, domElement ) {
 		scope.domElement.removeEventListener( 'mousedown', onMouseDown, false );
 		scope.domElement.removeEventListener( 'wheel', onMouseWheel, false );
 
-		scope.domElement.removeEventListener( 'touchstart', onTouchStart, false );
-		scope.domElement.removeEventListener( 'touchend', onTouchEnd, false );
-		scope.domElement.removeEventListener( 'touchmove', onTouchMove, false );
+		scope.domElement.removeEventListener( 'touchstart', onTouchStart );
+		scope.domElement.removeEventListener( 'touchend', onTouchEnd );
+		scope.domElement.removeEventListener( 'touchmove', onTouchMove );
 
 		document.removeEventListener( 'mousemove', onMouseMove, false );
 		document.removeEventListener( 'mouseup', onMouseUp, false );
@@ -929,9 +958,9 @@ THREE.OrbitControls = function ( object, domElement ) {
 	scope.domElement.addEventListener( 'mousedown', onMouseDown, false );
 	scope.domElement.addEventListener( 'wheel', onMouseWheel, false );
 
-	scope.domElement.addEventListener( 'touchstart', onTouchStart, false );
+	scope.domElement.addEventListener( 'touchstart', onTouchStart, { passive: false } );
 	scope.domElement.addEventListener( 'touchend', onTouchEnd, false );
-	scope.domElement.addEventListener( 'touchmove', onTouchMove, false );
+	scope.domElement.addEventListener( 'touchmove', onTouchMove, { passive: false } );
 
 	window.addEventListener( 'keydown', onKeyDown, false );
 

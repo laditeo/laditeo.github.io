@@ -2,7 +2,7 @@
 <html>
 <head>
     <title>See Be Release</title>
-    <link rel="stylesheet" href="./style.css">
+    <link rel="stylesheet" href="./style.css?v=camSave">
     <link rel="stylesheet" href="./grid-gallery.css">
     <!-- make favicon! -->
 
@@ -63,7 +63,7 @@
 
 <script src=./three.js></script>
 <script src=./GLTFLoader.js></script>
-<script src=./OrbitControls.js></script> -->
+<script src=./OrbitControls.js?v=touchSmooth></script> -->
 <!-- <script type="module" src=./feya.js></script> -->
 
 <!-- <script src=./33.js></script> -->
@@ -73,7 +73,7 @@
 function runPanelScripts(panel, scripts) {
   return scripts.reduce(function (promise, oldScript) {
     return promise.then(function () {
-      return new Promise(function (resolve, reject) {
+      return new Promise(function (resolve) {
         const newScript = document.createElement('script');
         Array.from(oldScript.attributes).forEach(function (attr) {
           newScript.setAttribute(attr.name, attr.value);
@@ -82,7 +82,10 @@ function runPanelScripts(panel, scripts) {
 
         if (newScript.src) {
           newScript.onload = resolve;
-          newScript.onerror = reject;
+          newScript.onerror = function () {
+            console.warn('[panel] script failed', newScript.src);
+            resolve();
+          };
         }
 
         panel.appendChild(newScript);
@@ -118,6 +121,25 @@ function showPanel(htmlFile) {
   content.querySelectorAll('.content-panel').forEach(panel => {
     panel.hidden = panel.dataset.page !== htmlFile;
   });
+  var footer = document.getElementById('site-footer');
+  var onHome = htmlFile.indexOf('iFeya') === 0;
+  document.body.classList.toggle('is-home', onHome);
+  if (footer) {
+    footer.setAttribute('aria-hidden', onHome ? 'true' : 'false');
+    // class drives slide animation; keep in DOM so transition can run
+    footer.classList.toggle('is-away', onHome);
+    footer.classList.toggle('is-in', !onHome);
+    if (onHome) {
+      var more = document.getElementById('social-more');
+      var btn = document.getElementById('social-spoiler');
+      if (more) more.setAttribute('data-open', 'false');
+      footer.setAttribute('data-open', 'false');
+      if (btn) {
+        btn.setAttribute('aria-expanded', 'false');
+        btn.classList.remove('is-open');
+      }
+    }
+  }
   window.scrollTo(0, 0);
 }
 
@@ -125,12 +147,24 @@ function loadContent(htmlFile) {
   const content = document.getElementById('content');
   const existingPanel = content.querySelector('.content-panel[data-page="' + htmlFile + '"]');
 
-  if (existingPanel) {
+  // Always remount home so experimental scripts re-init after soft nav / cache.
+  if (existingPanel && htmlFile.indexOf('iFeya') === 0) {
+    if (window.__socialGlobeDispose) {
+      try { window.__socialGlobeDispose(); } catch (e) {}
+    }
+    if (window.__feyaDispose) {
+      try { window.__feyaDispose(); } catch (e) {}
+    }
+    if (window.__hydraDispose) {
+      try { window.__hydraDispose(); } catch (e) {}
+    }
+    existingPanel.remove();
+  } else if (existingPanel) {
     showPanel(htmlFile);
     return;
   }
 
-  fetch(htmlFile)
+  fetch(htmlFile + (htmlFile.indexOf('?') >= 0 ? '&' : '?') + 'cb=' + Date.now())
     .then(response => response.text())
     .then(data => {
       if (content.querySelector('.content-panel[data-page="' + htmlFile + '"]')) {
@@ -162,7 +196,7 @@ window.onload = function() {
 <script src=./hydra-synth.js></script>
 <script src=./three.js></script>
 <script src=./GLTFLoader.js></script>
-<script src=./OrbitControls.js></script>
+<script src=./OrbitControls.js?v=touchSmooth></script>
 
 <!-- <script src=./logo.js></script> -->
 
@@ -225,7 +259,7 @@ justify-content: center;
 
 <!-- <script src=./three.js></script>
 <script src=./GLTFLoader.js></script>
-<script src=./OrbitControls.js></script> -->
+<script src=./OrbitControls.js?v=touchSmooth></script> -->
 <!-- <script type="module" src=./feya.js></script> -->
 
 <!-- <script src=./33.js></script> -->
@@ -234,64 +268,68 @@ justify-content: center;
 
 <!-- соцсети -->
 
-<div class="site-footer">
-   <!-- <a href="index.html"
-   target="_self"
-   onclick="window.open(
-     'https://500px.com/p/t3oc','a6000 photos','width=1280,height=720')">
-     <img src="svg/500px.svg"  ></a> -->
-
-
-     <a href="index.html"
-     target="_self"
-     onclick="window.open(
-       'https://vk.com/laditeo','В Контакте','width=1280,height=720')">
-       <img src="svg/VK.svg"></a>
-
-       <a href="index.html"
-       target="_self"
-       onclick="window.open(
-       'https://t.me/laditeo','telegram','width=550,height=550')">
-       <img src="svg/T.svg"  ></a>
-
-   
-
-       <a href="index.html"
-       target="_self"
-       onclick="window.open(
-         'https://bsky.app/profile/laditeo.art','a6000 photos','width=1280,height=720')">
-         <img src="svg/b.svg"  ></a>
-
-
-       <a href="index.html"
-       target="_self"
-       onclick="window.open(
-         'https://artstation.com/t3olad','artstation','width=1280,height=720')">
-         <img src="svg/a.svg"  ></a>
-
-         <a href="index.html"
-         target="_self"
-         onclick="window.open(
-           'https://t3olad.bandcamp.com','a6000 photos','width=1280,height=720')">
-           <img src="svg/bc.svg"  ></a>
-
-         <a href="index.html"
-         target="_self"
-         onclick="window.open(
-           'https://www.youtube.com/@0737asmr','youtube','width=1280,height=720')">
-           <img src="svg/You.svg"  ></a>
-
-  
-
-     
-     
-       
-           <!-- <a href="index.html"
-           target="_self"
-           onclick="window.open(
-             'https://ru.pinterest.com/t3oc/','a6000 photos','width=1280,height=720')">
-             <img src="svg/P.svg"  ></a> -->
+<div class="site-footer is-away" id="site-footer" data-open="false" aria-hidden="true">
+  <div class="site-footer__inner">
+    <div class="site-footer__row site-footer__row--main">
+     <a href="https://vk.com/laditeo" target="_blank" rel="noopener noreferrer">
+       <img src="svg/VK.svg?v=20260925f" alt="VK" height="28"></a>
+     <a href="https://t.me/laditeo" target="_blank" rel="noopener noreferrer">
+       <img src="svg/T.svg?v=20260925f" alt="Telegram" height="28"></a>
+     <a href="#" class="social-placeholder" data-network="twitter" target="_blank" rel="noopener noreferrer" title="Twitter — ссылка позже">
+       <img src="svg/twitter.svg?v=20260925f" alt="Twitter" height="28"></a>
+     <a href="https://bsky.app/profile/laditeo.art" target="_blank" rel="noopener noreferrer">
+       <img src="svg/b.svg?v=20260925f" alt="Bluesky" height="28"></a>
+     <a href="https://artstation.com/laditeo" target="_blank" rel="noopener noreferrer">
+       <img src="svg/a.svg?v=20260925f" alt="ArtStation" height="28"></a>
+     <a href="https://laditeo.bandcamp.com" target="_blank" rel="noopener noreferrer">
+       <img src="svg/bc.svg?v=20260925f" alt="Bandcamp" height="28"></a>
+     <button type="button" class="social-spoiler" id="social-spoiler" aria-expanded="false" aria-controls="social-more" title="Ещё соцсети">
+       <span class="social-spoiler__dots" aria-hidden="true">···</span>
+       <span class="visually-hidden">Ещё</span>
+     </button>
+    </div>
+    <div class="site-footer__more" id="social-more" data-open="false">
+      <div class="site-footer__more-inner">
+       <a href="https://www.youtube.com/@0737asmr" target="_blank" rel="noopener noreferrer">
+         <img src="svg/You.svg?v=20260925f" alt="YouTube" height="20"></a>
+       <a href="#" class="social-placeholder" data-network="reddit" target="_blank" rel="noopener noreferrer" title="Reddit — ссылка позже">
+         <img src="svg/reddit.svg?v=20260925f" alt="Reddit" height="28"></a>
+       <a href="#" class="social-placeholder" data-network="pinterest" target="_blank" rel="noopener noreferrer" title="Pinterest — ссылка позже">
+         <img src="svg/P.svg?v=20260925f" alt="Pinterest" height="28"></a>
+       <a href="#" class="social-placeholder" data-network="instagram" target="_blank" rel="noopener noreferrer" title="Instagram — ссылка позже">
+         <img src="svg/instagram.svg?v=20260925f" alt="Instagram" height="28"></a>
+       <a href="#" class="social-placeholder" data-network="soundcloud" target="_blank" rel="noopener noreferrer" title="SoundCloud — ссылка позже">
+         <img src="svg/soundcloud.svg?v=20260925f" alt="SoundCloud" height="28"></a>
+       <!-- hidden for now: tiktok
+       <a href="#" class="social-placeholder" data-network="tiktok" target="_blank" rel="noopener noreferrer" title="TikTok — ссылка позже">
+         <img src="svg/tiktok.svg?v=20260925f" alt="TikTok" height="28"></a>
+       -->
+       <a href="#" class="social-placeholder" data-network="objkt" target="_blank" rel="noopener noreferrer" title="objkt.com — ссылка позже">
+         <img class="objkt-icon" src="svg/objkt.svg?v=20260925circle" alt="objkt" height="28" width="28"></a>
+       <a href="#" class="social-placeholder" data-network="500px" target="_blank" rel="noopener noreferrer" title="500px — ссылка позже">
+         <img src="svg/500px.svg?v=20260925f" alt="500px" height="28"></a>
+      </div>
+    </div>
+  </div>
 </div>
+
+<script>
+(function () {
+  var btn = document.getElementById('social-spoiler');
+  var more = document.getElementById('social-more');
+  var footer = document.getElementById('site-footer');
+  if (!btn || !more || !footer) return;
+  btn.addEventListener('click', function () {
+    var open = more.getAttribute('data-open') === 'true';
+    open = !open;
+    more.setAttribute('data-open', open ? 'true' : 'false');
+    footer.setAttribute('data-open', open ? 'true' : 'false');
+    btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    btn.classList.toggle('is-open', open);
+  });
+})();
+</script>
+
 
 </body>
 </html>

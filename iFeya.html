@@ -1,8 +1,254 @@
-<div class="feya-stage">
-  <canvas id="bg" width="500" height="500"></canvas>
-  <canvas id="synth" width="500" height="500"></canvas>
-  <canvas id="myCanvas" width="500" height="500"></canvas>
+<div class="feya-stack">
+<aside class="feya-cam-panel" id="feya-cam-panel" aria-label="Camera dolly">
+    <div class="feya-cam-item">
+      <span class="feya-cam-label">fov↓</span>
+      <input type="range" id="fld-fovLo" min="2" max="40" step="0.1" value="5" title="FOV tele (narrow)">
+      <output id="fld-fovLo-val" for="fld-fovLo">5°</output>
+    </div>
+    <div class="feya-cam-item">
+      <span class="feya-cam-label">fov↑</span>
+      <input type="range" id="fld-fovHi" min="8" max="150" step="0.1" value="22" title="FOV wide">
+      <output id="fld-fovHi-val" for="fld-fovHi">22°</output>
+    </div>
+    <div class="feya-cam-item">
+      <span class="feya-cam-label">zoom↓</span>
+      <input type="range" id="fld-zoomLo" min="15" max="120" step="0.5" value="32.3" title="distance near (wide end)">
+      <output id="fld-zoomLo-val" for="fld-zoomLo">32.3</output>
+    </div>
+    <div class="feya-cam-item">
+      <span class="feya-cam-label">zoom↑</span>
+      <input type="range" id="fld-zoomHi" min="40" max="280" step="0.5" value="143.8" title="distance far (tele end)">
+      <output id="fld-zoomHi-val" for="fld-zoomHi">143.8</output>
+    </div>
+    <div class="feya-cam-item">
+      <span class="feya-cam-label">height</span>
+      <input type="range" id="fld-camY" min="-12" max="18" step="0.1" value="0" title="orbit target Y">
+      <output id="fld-camY-val" for="fld-camY">0</output>
+    </div>
+    <div class="feya-cam-item">
+      <span class="feya-cam-label">tilt</span>
+      <input type="range" id="fld-camTilt" min="25" max="120" step="0.5" value="90" title="polar angle (look up/down)">
+      <output id="fld-camTilt-val" for="fld-camTilt">90°</output>
+    </div>
+    <div class="feya-cam-item">
+      <span class="feya-cam-label">speed</span>
+      <input type="range" id="fld-animSpeed" min="0" max="4" step="0.05" value="1" title="animation playback rate">
+      <output id="fld-animSpeed-val" for="fld-animSpeed">1.00×</output>
+    </div>
+    <div class="fld-save" id="fld-cam-save" aria-live="polite">
+      <span class="fld-save-spin" aria-hidden="true"></span>
+      <span class="fld-save-txt" id="fld-cam-save-status">ready</span>
+    </div>
+  </aside>
+
+    <div class="feya-stage">
+    <canvas id="bg" width="500" height="500"></canvas>
+    <canvas id="synth" width="500" height="500"></canvas>
+    <canvas id="myCanvas" width="500" height="500"></canvas>
+  </div>
+
+  <details class="feya-debug-spoiler" id="feya-debug-spoiler" aria-hidden="true">
+    <summary class="feya-debug-spoiler__btn">
+      <span class="feya-debug-spoiler__dots" aria-hidden="true">···</span>
+      <span class="visually-hidden">Debug light</span>
+    </summary>
+    <aside class="feya-light-debug" id="feya-light-debug" aria-label="Debug light">
+    <div class="fld-col">
+      <span class="fld-label">amb</span>
+      <input type="range" id="fld-amb" min="0" max="3" step="0.01" value="0" orient="vertical">
+      <output id="fld-amb-val" for="fld-amb">0.00</output>
+    </div>
+    <div class="fld-col">
+      <span class="fld-label">hemi</span>
+      <input type="range" id="fld-hemi" min="0" max="3" step="0.01" value="0.71" orient="vertical">
+      <output id="fld-hemi-val" for="fld-hemi">0.71</output>
+    </div>
+    <div class="fld-col">
+      <span class="fld-label">key</span>
+      <input type="range" id="fld-key" min="0" max="3" step="0.01" value="1.40" orient="vertical">
+      <output id="fld-key-val" for="fld-key">1.40</output>
+    </div>
+
+    <div class="fld-col">
+      <span class="fld-label">bk</span>
+      <input type="range" id="fld-bk" min="0" max="3" step="0.01" value="0.85" orient="vertical" title="back-left lamp intensity">
+      <output id="fld-bk-val" for="fld-bk">0.85</output>
+    </div>
+    <div class="fld-hsv" data-hsv="bk">
+      <span class="fld-label">bk</span>
+      <div class="fld-hsv-row">
+        <div class="fld-hsv-one">
+          <span class="fld-sub">H</span>
+          <input type="range" id="fld-bkH" min="0" max="360" step="1" value="210" orient="vertical">
+          <output id="fld-bkH-val" for="fld-bkH">210</output>
+        </div>
+        <div class="fld-hsv-one">
+          <span class="fld-sub">S</span>
+          <input type="range" id="fld-bkS" min="0" max="100" step="1" value="25" orient="vertical">
+          <output id="fld-bkS-val" for="fld-bkS">25</output>
+        </div>
+        <div class="fld-hsv-one">
+          <span class="fld-sub">V</span>
+          <input type="range" id="fld-bkV" min="0" max="100" step="1" value="100" orient="vertical">
+          <output id="fld-bkV-val" for="fld-bkV">100</output>
+        </div>
+      </div>
+      <output id="fld-bkColor-val" class="fld-hsv-hex">#bfdfff</output>
+    </div>
+    <div class="fld-col">
+      <span class="fld-label">res</span>
+      <input type="range" id="fld-res" min="64" max="500" step="8" value="488" orient="vertical">
+      <output id="fld-res-val" for="fld-res">488</output>
+    </div>
+    <div class="fld-col">
+      <span class="fld-label">snap</span>
+      <input type="range" id="fld-snap" min="16" max="256" step="4" value="84" orient="vertical">
+      <output id="fld-snap-val" for="fld-snap">84</output>
+    </div>
+    <div class="fld-col">
+      <span class="fld-label">emis</span>
+      <input type="range" id="fld-emis" min="0" max="3" step="0.01" value="1.15" orient="vertical">
+      <output id="fld-emis-val" for="fld-emis">1.15</output>
+    </div>
+
+    <div class="fld-hsv" data-hsv="sh">
+      <span class="fld-label">sh</span>
+      <div class="fld-hsv-row">
+        <div class="fld-hsv-one">
+          <span class="fld-sub">H</span>
+          <input type="range" id="fld-shH" min="0" max="360" step="1" value="12" orient="vertical">
+          <output id="fld-shH-val" for="fld-shH">12</output>
+        </div>
+        <div class="fld-hsv-one">
+          <span class="fld-sub">S</span>
+          <input type="range" id="fld-shS" min="0" max="100" step="1" value="72" orient="vertical">
+          <output id="fld-shS-val" for="fld-shS">72</output>
+        </div>
+        <div class="fld-hsv-one">
+          <span class="fld-sub">V</span>
+          <input type="range" id="fld-shV" min="0" max="100" step="1" value="87" orient="vertical">
+          <output id="fld-shV-val" for="fld-shV">87</output>
+        </div>
+      </div>
+      <output id="fld-shColor-val" class="fld-hsv-hex">#de5e3e</output>
+    </div>
+
+    <div class="fld-col">
+      <span class="fld-label">shOp</span>
+      <input type="range" id="fld-shOp" min="0" max="3" step="0.01" value="1.54" orient="vertical">
+      <output id="fld-shOp-val" for="fld-shOp">1.54</output>
+    </div>
+    <div class="fld-col">
+      <span class="fld-label">shA</span>
+      <input type="range" id="fld-shA" min="0" max="1" step="0.01" value="1" orient="vertical" title="shadow opacity">
+      <output id="fld-shA-val" for="fld-shA">1.00</output>
+    </div>
+    <div class="fld-col">
+      <span class="fld-label">shFall</span>
+      <input type="range" id="fld-shFall" min="0.15" max="3" step="0.01" value="1.02" orient="vertical" title="shadow falloff">
+      <output id="fld-shFall-val" for="fld-shFall">1.02</output>
+    </div>
+
+    <div class="fld-hsv" data-hsv="lit">
+      <span class="fld-label">lit</span>
+      <div class="fld-hsv-row">
+        <div class="fld-hsv-one">
+          <span class="fld-sub">H</span>
+          <input type="range" id="fld-lh" min="0" max="360" step="1" value="0" orient="vertical">
+          <output id="fld-lh-val" for="fld-lh">0</output>
+        </div>
+        <div class="fld-hsv-one">
+          <span class="fld-sub">S</span>
+          <input type="range" id="fld-ls" min="0" max="100" step="1" value="0" orient="vertical">
+          <output id="fld-ls-val" for="fld-ls">0</output>
+        </div>
+        <div class="fld-hsv-one">
+          <span class="fld-sub">V</span>
+          <input type="range" id="fld-lv" min="0" max="100" step="1" value="100" orient="vertical">
+          <output id="fld-lv-val" for="fld-lv">100</output>
+        </div>
+      </div>
+      <output id="fld-color-val" class="fld-hsv-hex">#ffffff</output>
+    </div>
+
+    <div class="fld-cam-dual" title="polar clamp — dual handles">
+      <span class="fld-label">cam</span>
+      <div class="fld-cam-track">
+        <div class="fld-cam-fill" id="fld-cam-fill"></div>
+        <input type="range" id="fld-camMin" class="fld-cam-range fld-cam-lo" min="5" max="175" step="1" value="46" orient="vertical" aria-label="cam min polar">
+        <input type="range" id="fld-camMax" class="fld-cam-range fld-cam-hi" min="5" max="175" step="1" value="85" orient="vertical" aria-label="cam max polar">
+      </div>
+      <output id="fld-cam-val">46–85°</output>
+    </div>
+    <div class="fld-save" id="fld-save" aria-live="polite">
+      <span class="fld-save-spin" aria-hidden="true"></span>
+      <span class="fld-save-txt" id="fld-save-status">ready</span>
+    </div>
+  </aside>
+  </details>
+
+  <section class="social-globe" id="social-globe" aria-label="Соцсети — эксперимент-глобус">
+    <canvas id="social-globe-canvas" width="500" height="500"></canvas>
+  </section>
+
+  <aside class="globe-light-debug" id="globe-light-debug" aria-label="Globe debug">
+    <div class="fld-col">
+      <span class="fld-label">gap</span>
+      <input type="range" id="fld-gGap" min="0" max="80" step="1" value="22" orient="vertical" title="distance to fairy">
+      <output id="fld-gGap-val" for="fld-gGap">22</output>
+    </div>
+    <div class="fld-col">
+      <span class="fld-label">size</span>
+      <input type="range" id="fld-gSize" min="220" max="440" step="4" value="360" orient="vertical" title="globe size">
+      <output id="fld-gSize-val" for="fld-gSize">360</output>
+    </div>
+    <div class="fld-col">
+      <span class="fld-label">icon</span>
+      <input type="range" id="fld-gIcon" min="0.25" max="1.6" step="0.01" value="0.69" orient="vertical" title="initial icon size">
+      <output id="fld-gIcon-val" for="fld-gIcon">0.69</output>
+    </div>
+    <div class="fld-col">
+      <span class="fld-label">fall</span>
+      <input type="range" id="fld-gFall" min="0.2" max="3" step="0.01" value="2.47" orient="vertical" title="fog falloff">
+      <output id="fld-gFall-val" for="fld-gFall">2.47</output>
+    </div>
+    <div class="fld-col">
+      <span class="fld-label">fog</span>
+      <input type="range" id="fld-gFog" min="0" max="1" step="0.01" value="1" orient="vertical" title="fog opacity">
+      <output id="fld-gFog-val" for="fld-gFog">1.00</output>
+    </div>
+    <div class="fld-col">
+      <span class="fld-label">dith</span>
+      <input type="range" id="fld-gDith" min="0" max="16" step="1" value="1" orient="vertical" title="8-bit dither levels (0=smooth)">
+      <output id="fld-gDith-val" for="fld-gDith">1</output>
+    </div>
+    <div class="fld-col">
+      <span class="fld-label">grain</span>
+      <input type="range" id="fld-gGrain" min="1" max="24" step="1" value="6" orient="vertical" title="dither grain size">
+      <output id="fld-gGrain-val" for="fld-gGrain">6</output>
+    </div>
+    <div class="fld-col">
+      <span class="fld-label">nAmp</span>
+      <input type="range" id="fld-gNAmp" min="0" max="1.2" step="0.01" value="0.35" orient="vertical" title="turbulence strength">
+      <output id="fld-gNAmp-val" for="fld-gNAmp">0.35</output>
+    </div>
+    <div class="fld-col">
+      <span class="fld-label">nScale</span>
+      <input type="range" id="fld-gNScale" min="0.2" max="4" step="0.01" value="1.35" orient="vertical" title="noise scale">
+      <output id="fld-gNScale-val" for="fld-gNScale">1.35</output>
+    </div>
+    <div class="fld-col">
+      <span class="fld-label">nSpd</span>
+      <input type="range" id="fld-gNSpd" min="0" max="1.5" step="0.01" value="0.18" orient="vertical" title="noise rotation speed (around globe center)">
+      <output id="fld-gNSpd-val" for="fld-gNSpd">0.18</output>
+    </div>
+    <div class="fld-save" id="fld-g-save" aria-live="polite">
+      <span class="fld-save-spin" aria-hidden="true"></span>
+      <span class="fld-save-txt" id="fld-g-save-status">ready</span>
+    </div>
+  </aside>
 </div>
 
-<script src="./art_2.js"></script>
-<script src="./33.js"></script>
+<script src="./art_2.js?v=fpsFix"></script>
+<script src="./33.js?v=camSave"></script>
+<script src="./social-globe.js?v=iconClick"></script>

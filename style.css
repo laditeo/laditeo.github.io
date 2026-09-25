@@ -44,7 +44,7 @@ a.current {
   flex-direction: column;
   align-items: center;
   width: 100%;
-  padding-bottom: 72px;
+  padding-bottom: 120px;
 }
 
 .site-header,
@@ -155,8 +155,87 @@ a.current {
   width: min(400px, 100%);
 }
 
+
+/* Camera / dolly panel above fairy Three canvas */
+.feya-cam-panel {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 10px 14px;
+  width: min(500px, 90vw);
+  box-sizing: border-box;
+  margin: 0 0 10px;
+  padding: 10px 12px 12px;
+  border-radius: 16px;
+  background: rgba(0, 0, 0, 0.06);
+  font: 11px/1.2 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+.feya-cam-item {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
+  min-width: 72px;
+  flex: 1 1 72px;
+  max-width: 110px;
+}
+.feya-cam-label {
+  opacity: 0.7;
+  text-transform: lowercase;
+  letter-spacing: 0.02em;
+}
+.feya-cam-panel input[type="range"] {
+  width: 100%;
+  margin: 0;
+  accent-color: #1a1a1a;
+}
+.feya-cam-panel output {
+  font-variant-numeric: tabular-nums;
+  opacity: 0.85;
+  text-align: center;
+}
+
+.feya-cam-panel .fld-save {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  min-width: 44px;
+  align-self: stretch;
+  padding-bottom: 2px;
+  flex: 0 0 auto;
+}
+.feya-cam-panel .fld-save-spin {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid rgba(0,0,0,0.18);
+  border-top-color: rgba(0,0,0,0.55);
+  opacity: 0;
+  transform: scale(0.85);
+  transition: opacity 0.15s ease;
+}
+.feya-cam-panel .fld-save[data-state="saving"] .fld-save-spin {
+  opacity: 1;
+  animation: feya-save-spin 0.7s linear infinite;
+}
+.feya-cam-panel .fld-save-txt {
+  font-size: 9px;
+  letter-spacing: 0.02em;
+  text-transform: lowercase;
+  opacity: 0.55;
+  min-height: 1em;
+}
+.feya-cam-panel .fld-save[data-state="saving"] .fld-save-txt { opacity: 0.85; }
+.feya-cam-panel .fld-save[data-state="saved"] .fld-save-txt { opacity: 0.7; color: #1a7a3c; }
+.feya-cam-panel .fld-save[data-state="err"] .fld-save-txt { opacity: 0.9; color: #b00020; }
+
 .feya-stage {
   position: relative;
+  touch-action: none;
+  overscroll-behavior: contain;
   width: min(500px, 90vw);
   height: min(500px, 90vw);
   flex-shrink: 0;
@@ -185,6 +264,13 @@ a.current {
 .feya-stage #myCanvas {
   z-index: 2;
   cursor: all-scroll;
+  touch-action: none;
+  overscroll-behavior: contain;
+  -webkit-user-select: none;
+  user-select: none;
+  /* nearest upscale of low-res WebGL buffer — no shader filter */
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
 }
 
 .embed-art {
@@ -381,16 +467,145 @@ a.current {
   margin: 0;
 }
 
+
 .site-footer {
   position: fixed;
-  bottom: 0;
   left: 0;
+  right: 0;
+  bottom: 0;
+  width: auto;
+  max-width: none;
+  box-sizing: border-box;
   z-index: 1000;
+  margin: 0;
+  padding: 10px 16px;
+  background: #ffffff;
+  text-align: center;
+  overflow: hidden; /* clip second row when closed */
   display: flex;
   justify-content: center;
-  width: 100%;
-  padding: 10px 0;
-  background: #ffffff;
+  align-items: flex-start;
+  height: auto;
+  min-height: 48px;
+}
+
+.site-footer__inner {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: stretch;
+  gap: 0;
+  width: max-content;
+  max-width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  box-sizing: border-box;
+  height: auto;
+}
+
+
+
+
+/* 7 equal columns — icon centers align vertically across both rows */
+.site-footer__inner {
+  width: max-content;
+  max-width: 100%;
+}
+
+.site-footer__row--main,
+.site-footer__more-inner {
+  display: grid;
+  grid-template-columns: repeat(7, 40px);
+  column-gap: 12px;
+  align-items: center;
+  justify-items: center;
+  width: max-content;
+  box-sizing: border-box;
+}
+
+.site-footer__row--main {
+  height: 28px;
+}
+
+.site-footer__row--main > a,
+.site-footer__more-inner > a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 28px;
+  margin: 0 !important;
+  line-height: 0;
+  font-size: 0 !important;
+}
+
+.site-footer__row--main > .social-spoiler {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  justify-self: center;
+  width: 28px;
+  height: 28px;
+  margin: 0 !important;
+  line-height: 1;
+  font-size: 16px !important;
+}
+
+.site-footer__row--main img,
+.site-footer__more-inner img {
+  height: 28px !important;
+  width: auto !important;
+  max-width: 40px !important;
+  max-height: 28px !important;
+  object-fit: contain;
+  display: block;
+}
+
+.site-footer__more-inner img.objkt-icon,
+.site-footer__more-inner img[alt="objkt"] {
+  width: 28px !important;
+  height: 28px !important;
+  max-width: 28px !important;
+  border-radius: 50%;
+}
+
+.site-footer__more-inner {
+  overflow: hidden;
+  min-height: 0;
+  padding-top: 0;
+  opacity: 0;
+  transform: translateY(8px);
+  transition:
+    padding-top 0.28s ease-in-out,
+    opacity 0.28s ease-in-out,
+    transform 0.28s ease-in-out;
+}
+
+.site-footer__more[data-open="true"] .site-footer__more-inner {
+  padding-top: 10px;
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.site-footer a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
+  margin: 0 !important; /* override global a { margin: 5px } */
+  font-size: 0 !important; /* kill 20pt leftover from global a */
+  flex: 0 0 auto;
+}
+
+.site-footer img {
+  height: 28px;
+  width: auto;
+  max-width: 56px; /* keep wordmarks like 500px from skewing the row */
+  display: block;
+}
+
+.site-footer a.social-placeholder {
+  opacity: 0.85;
 }
 
 .iclock-section {
@@ -494,3 +709,575 @@ a.current {
   border: 0;
   border-radius: 10px;
 }
+
+body.reel-page {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 1.5rem 1rem 3rem;
+  box-sizing: border-box;
+}
+
+.reel-stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.25rem;
+  width: 100%;
+}
+
+.reel-main,
+.reel-chars {
+  display: block;
+  width: auto;
+  max-width: 50vw;
+  max-height: 50vh;
+  height: auto;
+  margin: 0 auto;
+  border: 0;
+  border-radius: 12px;
+  background: #000;
+  object-fit: contain;
+}
+
+.reel-chars {
+  max-width: 28vw;
+  max-height: 28vh;
+}
+
+
+
+/* social spoiler (after Bandcamp) */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.social-spoiler {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  min-height: 28px;
+  padding: 0;
+  margin: 0 !important;
+  border: 1px solid rgba(26, 81, 103, 0.35);
+  border-radius: 999px;
+  background: #f4f8f9;
+  color: rgb(26, 81, 103);
+  font-size: 16px !important;
+  line-height: 1;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  flex: 0 0 28px;
+  transition: background 0.2s ease-in-out, border-color 0.2s ease-in-out, color 0.2s ease-in-out;
+}
+
+.social-spoiler:hover {
+  background: #e7f2f4;
+  border-color: rgba(26, 81, 103, 0.55);
+  color: rgb(26, 81, 103);
+  text-decoration: none;
+}
+
+.social-spoiler.is-open {
+  background: rgb(26, 81, 103);
+  border-color: rgb(26, 81, 103);
+  color: #fff;
+}
+
+.social-spoiler__dots {
+  display: block;
+  font-size: 16px;
+  line-height: 1;
+  letter-spacing: 0.05em;
+  color: inherit;
+  transform: translateY(-1px);
+}
+
+/* Second row sits below; bar grows upward (bottom fixed) with snappy ease-in-out */
+.site-footer__more {
+  display: grid;
+  grid-template-rows: 0fr;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  opacity: 1;
+  visibility: visible;
+  pointer-events: none;
+  transform: none;
+  transition: grid-template-rows 0.28s ease-in-out;
+}
+
+.site-footer__more[data-open="true"] {
+  grid-template-rows: 1fr;
+  pointer-events: auto;
+}
+
+/* YouTube wordmark reads large — scale down to match neighbors */
+.site-footer__more-inner img[alt="YouTube"] {
+  height: 20px !important;
+  max-height: 20px !important;
+  max-width: 36px !important;
+}
+
+/* Social icons globe experiment (below feya canvas) */
+.social-globe {
+  position: relative;
+  width: min(100%, 360px);
+  max-width: 360px;
+  margin: 22px auto 16px;
+  aspect-ratio: 1 / 1;
+  min-height: 260px;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  overflow: visible;
+  display: block;
+  touch-action: none;
+  overscroll-behavior: contain;
+  /* soft dissolve at outer rim (kept) */
+  -webkit-mask-image: radial-gradient(ellipse 62% 58% at 50% 48%, #000 22%, rgba(0,0,0,0.7) 58%, transparent 78%);
+  mask-image: radial-gradient(ellipse 62% 58% at 50% 48%, #000 22%, rgba(0,0,0,0.7) 58%, transparent 78%);
+}
+.social-globe canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+  cursor: grab;
+  touch-action: none;
+  overscroll-behavior: contain;
+  border: none;
+  outline: none;
+  background: transparent;
+  position: relative;
+  z-index: 1;
+}
+.social-globe canvas:active {
+  cursor: grabbing;
+}
+
+
+/* Footer bar slides in on content pages, out on home */
+.site-footer {
+  transition:
+    transform 0.38s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.28s ease;
+  will-change: transform, opacity;
+}
+.site-footer.is-away {
+  transform: translate3d(0, 120%, 0);
+  opacity: 0;
+  pointer-events: none;
+}
+.site-footer.is-in {
+  transform: translate3d(0, 0, 0);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Fairy stack: stage → debug → globe */
+.feya-stack {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  width: 100%;
+}
+
+.feya-light-debug {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: stretch;
+  justify-content: center;
+  gap: 8px;
+  width: min(500px, 90vw);
+  box-sizing: border-box;
+  padding: 10px 8px;
+  border-radius: 16px;
+  background: rgba(0, 0, 0, 0.06);
+  font: 11px/1.2 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  color: #222;
+  user-select: none;
+}
+
+.feya-light-debug .fld-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  min-width: 36px;
+}
+
+.feya-light-debug .fld-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  opacity: 0.7;
+}
+
+.feya-light-debug .fld-sub {
+  font-size: 9px;
+  opacity: 0.55;
+}
+
+.feya-light-debug input[type="range"] {
+  writing-mode: vertical-lr;
+  direction: rtl;
+  appearance: slider-vertical;
+  -webkit-appearance: slider-vertical;
+  width: 22px;
+  height: min(200px, 42vw);
+  margin: 0;
+  cursor: pointer;
+}
+
+.feya-light-debug output {
+  display: block;
+  min-width: 2.8em;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+/* HSV: three vertical sliders in one group (sh / lit) */
+.feya-light-debug .fld-hsv {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 0 4px;
+  border-left: 1px solid rgba(0,0,0,0.08);
+  border-right: 1px solid rgba(0,0,0,0.08);
+}
+
+.feya-light-debug .fld-hsv-row {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  gap: 4px;
+}
+
+.feya-light-debug .fld-hsv-one {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+}
+
+.feya-light-debug .fld-hsv input[type="range"] {
+  height: min(200px, 42vw);
+  width: 18px;
+}
+
+.feya-light-debug .fld-hsv-hex {
+  font-size: 10px;
+  letter-spacing: 0.02em;
+  min-width: 4.5em;
+}
+
+@media (max-width: 520px) {
+  .feya-light-debug input[type="range"] {
+    height: min(160px, 38vw);
+  }
+  .feya-light-debug .fld-hsv input[type="range"] {
+    height: min(160px, 38vw);
+  }
+}
+
+/* Dual-handle cam polar clamp (zipper) */
+.feya-light-debug .fld-cam-dual {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  min-width: 40px;
+}
+
+.feya-light-debug .fld-cam-track {
+  position: relative;
+  width: 28px;
+  height: min(200px, 42vw);
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.feya-light-debug .fld-cam-fill {
+  position: absolute;
+  left: 9px;
+  right: 9px;
+  border-radius: 999px;
+  background: rgba(30, 120, 255, 0.45);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.feya-light-debug .fld-cam-range {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  writing-mode: vertical-lr;
+  direction: rtl;
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.feya-light-debug .fld-cam-range::-webkit-slider-runnable-track {
+  background: transparent;
+  width: 4px;
+}
+
+.feya-light-debug .fld-cam-range::-moz-range-track {
+  background: transparent;
+  width: 4px;
+}
+
+.feya-light-debug .fld-cam-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  pointer-events: auto;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  background: #1e78ff;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.35);
+  cursor: ns-resize;
+  margin-left: -7px;
+}
+
+.feya-light-debug .fld-cam-range::-moz-range-thumb {
+  pointer-events: auto;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  background: #1e78ff;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.35);
+  cursor: ns-resize;
+}
+
+.feya-light-debug .fld-cam-lo {
+  z-index: 2;
+}
+
+.feya-light-debug .fld-cam-hi {
+  z-index: 2;
+}
+
+.feya-light-debug #fld-cam-val {
+  font-size: 10px;
+  min-width: 4.2em;
+  white-space: nowrap;
+}
+
+.feya-light-debug .fld-save {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  min-width: 44px;
+  align-self: stretch;
+  padding-bottom: 2px;
+}
+.feya-light-debug .fld-save-spin {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid rgba(0,0,0,0.18);
+  border-top-color: rgba(0,0,0,0.55);
+  opacity: 0;
+  transform: scale(0.85);
+  transition: opacity 0.15s ease;
+}
+.feya-light-debug .fld-save[data-state="saving"] .fld-save-spin {
+  opacity: 1;
+  animation: feya-save-spin 0.7s linear infinite;
+}
+.feya-light-debug .fld-save-txt {
+  font-size: 9px;
+  letter-spacing: 0.02em;
+  text-transform: lowercase;
+  opacity: 0.55;
+  min-height: 1em;
+}
+.feya-light-debug .fld-save[data-state="saving"] .fld-save-txt { opacity: 0.85; }
+.feya-light-debug .fld-save[data-state="saved"] .fld-save-txt { opacity: 0.7; color: #1a7a3c; }
+.feya-light-debug .fld-save[data-state="err"] .fld-save-txt { opacity: 0.9; color: #b00020; }
+@keyframes feya-save-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* fairy debug spoiler — in document flow so open panel pushes the globe down */
+.feya-debug-spoiler {
+  position: relative;
+  z-index: 6;
+  width: min(500px, 90vw);
+  box-sizing: border-box;
+  margin: 0 auto;
+  max-height: 0;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  overflow: hidden;
+  transform: translateY(6px);
+  transition: opacity 0.45s ease, transform 0.45s ease, visibility 0.45s, max-height 0.45s ease, margin 0.45s ease;
+}
+.feya-debug-spoiler.is-visible,
+.feya-debug-spoiler[open] {
+  /* [open] keeps panel in flow even if camera faces front */
+  max-height: 900px;
+  margin: 22px auto 10px; /* a bit lower under the fairy stage */
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  overflow: visible;
+  transform: translateY(0);
+}
+.feya-debug-spoiler > summary {
+  list-style: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 28px;
+  margin: 0 auto;
+  padding: 0;
+  border: 1px solid rgba(26, 81, 103, 0.35);
+  border-radius: 999px;
+  background: #f4f8f9;
+  color: rgb(26, 81, 103);
+  user-select: none;
+  transition: background 0.2s ease-in-out, border-color 0.2s ease-in-out, color 0.2s ease-in-out;
+}
+.feya-debug-spoiler > summary::-webkit-details-marker { display: none; }
+.feya-debug-spoiler > summary:hover {
+  background: #e7f2f4;
+  border-color: rgba(26, 81, 103, 0.55);
+}
+.feya-debug-spoiler[open] > summary {
+  background: rgb(26, 81, 103);
+  border-color: rgb(26, 81, 103);
+  color: #fff;
+  margin-bottom: 8px;
+}
+.feya-debug-spoiler__dots {
+  font-size: 16px;
+  letter-spacing: 0.05em;
+  line-height: 1;
+}
+.feya-debug-spoiler .feya-light-debug {
+  width: 100%;
+}
+
+/* globe debug under sphere — hidden for now */
+.globe-light-debug {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: stretch;
+  justify-content: center;
+  gap: 8px;
+  width: min(500px, 90vw);
+  box-sizing: border-box;
+  padding: 10px 8px;
+  margin: 0 auto 20px;
+  border-radius: 16px;
+  background: rgba(0, 0, 0, 0.06);
+  font: 11px/1.2 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  color: #222;
+  user-select: none;
+}
+.globe-light-debug .fld-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  min-width: 36px;
+}
+.globe-light-debug .fld-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  opacity: 0.7;
+}
+.globe-light-debug input[type="range"] {
+  writing-mode: vertical-lr;
+  direction: rtl;
+  appearance: slider-vertical;
+  -webkit-appearance: slider-vertical;
+  width: 18px;
+  height: 88px;
+  padding: 0;
+  margin: 0;
+  background: transparent;
+}
+.globe-light-debug output {
+  font-size: 10px;
+  opacity: 0.75;
+  min-height: 1.1em;
+}
+
+.globe-light-debug .fld-save {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  min-width: 44px;
+  align-self: stretch;
+  padding-bottom: 2px;
+}
+.globe-light-debug .fld-save-spin {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid rgba(0,0,0,0.18);
+  border-top-color: rgba(0,0,0,0.55);
+  opacity: 0;
+  transform: scale(0.85);
+  transition: opacity 0.15s ease;
+}
+.globe-light-debug .fld-save[data-state="saving"] .fld-save-spin {
+  opacity: 1;
+  animation: feya-save-spin 0.7s linear infinite;
+}
+.globe-light-debug .fld-save-txt {
+  font-size: 9px;
+  letter-spacing: 0.02em;
+  text-transform: lowercase;
+  opacity: 0.55;
+  min-height: 1em;
+}
+.globe-light-debug .fld-save[data-state="saving"] .fld-save-txt { opacity: 0.85; }
+.globe-light-debug .fld-save[data-state="saved"] .fld-save-txt { opacity: 0.7; color: #1a7a3c; }
+.globe-light-debug .fld-save[data-state="err"] .fld-save-txt { opacity: 0.9; color: #b00020; }
+
