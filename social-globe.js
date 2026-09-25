@@ -53,7 +53,15 @@
       premultipliedAlpha: true
     });
     renderer.setClearColor(0x000000, 0);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    (function setGlobePR() {
+      var dpr = window.devicePixelRatio || 1;
+      var coarse = false;
+      try { coarse = window.matchMedia && window.matchMedia('(pointer: coarse)').matches; } catch (eM) {}
+      var narrow = (window.innerWidth || 0) < 900;
+      // tablet/phone: 1× buffer; desktop retina: cap 1.5 (was 2)
+      var cap = (coarse || narrow) ? 1 : 1.5;
+      renderer.setPixelRatio(Math.min(dpr, cap));
+    })();
 
     var group = new THREE.Group();
     group.rotation.x = 0.22;
@@ -225,14 +233,16 @@
       '}',
       '',
       'float fbm(vec3 p) {',
+      '  // 2 octaves (was 4) — ~half noise cost, similar soft volume',
       '  float f = 0.0;',
       '  float a = 0.5;',
-      '  for (int i = 0; i < 4; i++) {',
+      '  for (int i = 0; i < 2; i++) {',
       '    f += a * snoise(p);',
       '    p = p * 2.02 + 17.0;',
       '    a *= 0.5;',
       '  }',
-      '  return f;',
+      '  // normalize toward previous 4-oct energy',
+      '  return f * 1.33;',
       '}',
       '',
       'bool intersectSphere(vec3 ro, vec3 rd, vec3 c, float r, out float t0, out float t1) {',
@@ -257,7 +267,7 @@
       '  float t0, t1;',
       '  if (!intersectSphere(ro, rd, uCenter, uRadius, t0, t1)) discard;',
       '  t0 = max(t0, 0.0);',
-      '  const int STEPS = 28;',
+      '  const int STEPS = 16; // was 28 — cheaper raymarch, same falloff/colors',
       '  float dt = (t1 - t0) / float(STEPS);',
       '  // Per-pixel jitter breaks concentric raymarch shells (ellipse rings)',
       '  float jitter = hash21(gl_FragCoord.xy);',
@@ -696,8 +706,19 @@
     var running = true;
     var raf = 0;
 
-    function tick() {
+    var onScreen = true;
+    var visObs = null;
+    function shouldTick() {
+      return running && onScreen && !document.hidden;
+    }
+    function kick() {
       if (!running) return;
+      if (raf) return;
+      raf = requestAnimationFrame(tick);
+    }
+    function tick() {
+      raf = 0;
+      if (!shouldTick()) return;
       raf = requestAnimationFrame(tick);
       if (!dragging && !pinching) {
         group.rotation.y += velX;
@@ -936,7 +957,23 @@
     }
 
     console.info('[social-globe] ready');
+    try {
+      if (typeof IntersectionObserver !== 'undefined' && canvas) {
+        visObs = new IntersectionObserver(function (ents) {
+          var on = false;
+          for (var i = 0; i < ents.length; i++) if (ents[i].isIntersecting) on = true;
+          onScreen = on;
+          if (on) kick();
+        }, { root: null, threshold: 0.01 });
+        visObs.observe(canvas);
+      }
+    } catch (eVis) {}
+    document.addEventListener('visibilitychange', kick);
+
     window.__socialGlobeDispose = function () {
+      try { document.removeEventListener('visibilitychange', kick); } catch (eV0) {}
+      try { if (visObs) visObs.disconnect(); } catch (eV1) {}
+
       running = false;
       cancelAnimationFrame(raf);
       canvas.removeEventListener('pointerdown', onPointerDown);

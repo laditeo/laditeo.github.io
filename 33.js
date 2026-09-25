@@ -69,8 +69,8 @@
 		renderer.setPixelRatio(1);
 		renderer.setSize(PS1_W, PS1_H, false); // false = keep CSS size (stage fills canvas)
 		renderer.setClearColor(0x000000, 0);
-		renderer.shadowMap.enabled = true;
-    	renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+		// no mesh castShadow/receiveShadow — leave maps off (saves GPU path)
+		renderer.shadowMap.enabled = false;
 		// Fixed look vs OS HDR / wide-gamut (r137: outputEncoding; SRGBColorSpace is newer)
 		renderer.toneMapping = THREE.ACESFilmicToneMapping;
 		renderer.toneMappingExposure = 1.0;
@@ -708,6 +708,19 @@
 			var mesh = entry.mesh;
 			var inf = mesh.morphTargetInfluences;
 			if (!inf) continue;
+			// skip CPU+GPU upload when mixer left influences unchanged
+			var prev = entry.lastInf;
+			if (!prev || prev.length !== inf.length) {
+				prev = entry.lastInf = new Float32Array(inf.length);
+				for (var zi = 0; zi < inf.length; zi++) prev[zi] = NaN;
+			}
+			var changed = false;
+			for (var ci = 0; ci < inf.length; ci++) {
+				var vInf = inf[ci] || 0;
+				if (prev[ci] !== vInf) { changed = true; break; }
+			}
+			if (!changed) continue;
+			for (var ci2 = 0; ci2 < inf.length; ci2++) prev[ci2] = inf[ci2] || 0;
 			var posAttr = mesh.geometry.attributes.position;
 			var out = posAttr.array;
 			var baseArr = entry.base.array;
@@ -721,10 +734,10 @@
 				var x = baseArr[i3] * baseInf;
 				var y = baseArr[i3 + 1] * baseInf;
 				var z = baseArr[i3 + 2] * baseInf;
-				for (var t = 0; t < morphPos.length; t++) {
-					var w = inf[t];
+				for (var tt = 0; tt < morphPos.length; tt++) {
+					var w = inf[tt];
 					if (!w) continue;
-					var a = morphPos[t].array;
+					var a = morphPos[tt].array;
 					x += a[i3] * w;
 					y += a[i3 + 1] * w;
 					z += a[i3 + 2] * w;
@@ -1123,9 +1136,21 @@
 	var feyaClock = new THREE.Clock();
 	var feyaRunning = true;
 	var feyaRaf = 0;
+	var feyaOnScreen = true;
+	var feyaVisObs = null;
+	function feyaShouldTick() {
+		return feyaRunning && feyaOnScreen && !document.hidden;
+	}
+	function feyaKick() {
+		if (!feyaRunning) return;
+		if (feyaRaf) return;
+		feyaClock.getDelta(); // drop accumulated stall
+		render();
+	}
 	// Fixed-step anim vars declared above (before cam panel)
 	function render() {
-		if (!feyaRunning) return;
+		feyaRaf = 0;
+		if (!feyaShouldTick()) return;
 		feyaRaf = requestAnimationFrame(render);
 		var frameDt = feyaClock.getDelta();
 		if (frameDt > FEYA_MAX_FRAME_DT) frameDt = FEYA_MAX_FRAME_DT;
@@ -1144,9 +1169,24 @@
 		updateBootShadow();
 		renderer.render(scene, camera);
 	}
+	try {
+		if (typeof IntersectionObserver !== 'undefined' && myCanvas) {
+			feyaVisObs = new IntersectionObserver(function (ents) {
+				var on = false;
+				for (var i = 0; i < ents.length; i++) if (ents[i].isIntersecting) on = true;
+				feyaOnScreen = on;
+				if (on) feyaKick();
+			}, { root: null, threshold: 0.01 });
+			feyaVisObs.observe(myCanvas);
+		}
+	} catch (eVis) {}
+	document.addEventListener('visibilitychange', feyaKick);
 	window.__feyaDispose = function () {
 		feyaRunning = false;
 		cancelAnimationFrame(feyaRaf);
+		feyaRaf = 0;
+		try { document.removeEventListener('visibilitychange', feyaKick); } catch (e0) {}
+		try { if (feyaVisObs) feyaVisObs.disconnect(); } catch (eObs) {}
 		try { if (controls && controls.dispose) controls.dispose(); } catch (e1) {}
 		try { if (renderer) renderer.dispose(); } catch (e2) {}
 		window.__feyaDispose = null;
