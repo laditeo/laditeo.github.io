@@ -1,0 +1,8 @@
+<div class="feya-stage">
+  <canvas id="bg" width="500" height="500"></canvas>
+  <canvas id="synth" width="500" height="500"></canvas>
+  <canvas id="myCanvas" width="500" height="500"></canvas>
+</div>
+
+<script src="./art_2.js"></script>
+<script src="./33.js"></script>

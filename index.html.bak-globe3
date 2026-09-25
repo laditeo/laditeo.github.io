@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>See Be Release</title>
+    <link rel="stylesheet" href="./style.css?v=20260925globe">
+    <link rel="stylesheet" href="./grid-gallery.css">
+    <!-- make favicon! -->
+
+</head>
+
+<body>
+
+<div class="site-shell">
+
+<div class="site-header" onclick="delay('index.html')">
+<script>function delay (URL) {
+  setTimeout( function() { window.location = URL }, 1200 );
+}
+</script>
+
+<div class="square toggle-down" onclick="toggle()">
+<img src="logo.gif" width="120" height="120" alt="">
+</div>
+
+<script>
+  var upClass = 'toggle-up';
+  var downClass = 'toggle-down';
+
+  function toggle() {
+    var square = document.querySelector('.square');
+
+    if (~square.className.indexOf(downClass)) {
+      square.className = square.className.replace(downClass, upClass);
+    } else {
+      square.className = square.className.replace(upClass, downClass);
+    }
+  }
+</script>
+
+</div>
+
+<div class="site-brand">
+  <a href="#" onclick="loadHome(); return false;" aria-label="Home">
+    <img src="t3o.png" height="60" alt="">
+  </a>
+</div>
+
+<nav class="site-nav">
+  <a href="#" onclick="loadContent('sonic.html'); return false;">ЗВУК</a>
+  <a href="#" onclick="loadContent('vision.html'); return false;">ИДЕЯ</a>
+  <a href="#" onclick="loadContent('iClock.html'); return false;">ЧАСЫ</a>
+  <a href="#" onclick="loadContent('visual.html'); return false;">АРТ</a>
+  <a href="#" onclick="loadContent('solutions.html'); return false;">ДЕЛА</a>
+</nav>
+
+<main class="content" id="content"></main>
+
+</div>
+
+
+<!-- <script src=./hydra-synth.js></script>
+<script src=./art_2.js></script>
+
+<script src=./three.js></script>
+<script src=./GLTFLoader.js></script>
+<script src=./OrbitControls.js></script> -->
+<!-- <script type="module" src=./feya.js></script> -->
+
+<!-- <script src=./33.js></script> -->
+
+
+<script>
+function runPanelScripts(panel, scripts) {
+  return scripts.reduce(function (promise, oldScript) {
+    return promise.then(function () {
+      return new Promise(function (resolve, reject) {
+        const newScript = document.createElement('script');
+        Array.from(oldScript.attributes).forEach(function (attr) {
+          newScript.setAttribute(attr.name, attr.value);
+        });
+        newScript.textContent = oldScript.textContent;
+
+        if (newScript.src) {
+          newScript.onload = resolve;
+          newScript.onerror = reject;
+        }
+
+        panel.appendChild(newScript);
+
+        if (!newScript.src) {
+          resolve();
+        }
+      });
+    });
+  }, Promise.resolve());
+}
+
+function mountPanel(htmlFile, data) {
+  const content = document.getElementById('content');
+  const panel = document.createElement('div');
+  panel.className = 'content-panel';
+  panel.dataset.page = htmlFile;
+
+  const doc = new DOMParser().parseFromString(data, 'text/html');
+  const scripts = [...doc.querySelectorAll('script')];
+
+  scripts.forEach(script => script.remove());
+  panel.innerHTML = doc.body.innerHTML;
+  content.appendChild(panel);
+
+  return runPanelScripts(panel, scripts).then(function () {
+    return panel;
+  });
+}
+
+function showPanel(htmlFile) {
+  const content = document.getElementById('content');
+  content.querySelectorAll('.content-panel').forEach(panel => {
+    panel.hidden = panel.dataset.page !== htmlFile;
+  });
+  window.scrollTo(0, 0);
+}
+
+function loadContent(htmlFile) {
+  const content = document.getElementById('content');
+  const existingPanel = content.querySelector('.content-panel[data-page="' + htmlFile + '"]');
+
+  if (existingPanel) {
+    showPanel(htmlFile);
+    return;
+  }
+
+  fetch(htmlFile)
+    .then(response => response.text())
+    .then(data => {
+      if (content.querySelector('.content-panel[data-page="' + htmlFile + '"]')) {
+        showPanel(htmlFile);
+        return;
+      }
+
+      mountPanel(htmlFile, data).then(function () {
+        showPanel(htmlFile);
+      });
+    })
+    .catch(error => console.error(error));
+}
+
+function loadHome() {
+  loadContent('iFeya.html');
+}
+
+
+window.onload = function() {
+  loadContent('iFeya.html');}
+
+
+
+</script>
+
+
+
+<script src=./hydra-synth.js></script>
+<script src=./three.js></script>
+<script src=./GLTFLoader.js></script>
+<script src=./OrbitControls.js></script>
+
+<!-- <script src=./logo.js></script> -->
+
+<!-- <p style=" 
+display: flex;
+justify-content: center;
+">Электропочта: t3oc@tuta.io</p> -->
+
+
+<!-- page links -->
+
+<!-- <div style="
+display: flex;
+justify-content: center;
+">
+<a href="sonic.html">ЗВУК</a>
+<a href="vision.html">ИДЕЯ</a>
+<a href="visual.html">АРТ</a>
+<a href="solutions.html">ДЕЛА</a>
+
+</div> -->
+
+
+
+        <!-- <canvas id="bg" width=500 height=500 
+        style="position: absolute; z-index: 0; 
+        /* left: 50%; top: 40%; transform: translate(-50%, -50%);
+        background-color: rgb(255, 255, 255); border-radius: 40px */
+        
+        "></canvas> 
+
+        <canvas id="synth" width=500 height=500 
+          style=" position: absolute; 
+          z-index: 1;
+          /* left: 50%; top: 40%; transform: translate(-50%, -50%);
+          border:1px solid #d3d3d3; border-radius: 40px  */
+          
+        "></canvas> -->
+
+   
+
+
+<!-- <script src=./hydra-synth.js></script> -->
+<!-- <script src=./art_2.js></script> -->
+
+
+
+<!-- <script async src="https://ga.jspm.io/npm:es-module-shims@1.7.0/dist/es-module-shims.js"></script>
+
+<script type="importmap">
+{
+    "imports": {
+    "three": "https://unpkg.com/three@0.157.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.157.0/examples/jsm/"
+     }
+}
+</script>  -->
+
+
+
+<!-- <script src=./three.js></script>
+<script src=./GLTFLoader.js></script>
+<script src=./OrbitControls.js></script> -->
+<!-- <script type="module" src=./feya.js></script> -->
+
+<!-- <script src=./33.js></script> -->
+
+
+
+<!-- соцсети -->
+
+<div class="site-footer" id="site-footer" data-open="false">
+  <div class="site-footer__inner">
+    <div class="site-footer__row site-footer__row--main">
+     <a href="https://vk.com/laditeo" target="_blank" rel="noopener noreferrer">
+       <img src="svg/VK.svg?v=20260925f" alt="VK" height="28"></a>
+     <a href="https://t.me/laditeo" target="_blank" rel="noopener noreferrer">
+       <img src="svg/T.svg?v=20260925f" alt="Telegram" height="28"></a>
+     <a href="#" class="social-placeholder" data-network="twitter" target="_blank" rel="noopener noreferrer" title="Twitter — ссылка позже">
+       <img src="svg/twitter.svg?v=20260925f" alt="Twitter" height="28"></a>
+     <a href="https://bsky.app/profile/laditeo.art" target="_blank" rel="noopener noreferrer">
+       <img src="svg/b.svg?v=20260925f" alt="Bluesky" height="28"></a>
+     <a href="https://artstation.com/laditeo" target="_blank" rel="noopener noreferrer">
+       <img src="svg/a.svg?v=20260925f" alt="ArtStation" height="28"></a>
+     <a href="https://laditeo.bandcamp.com" target="_blank" rel="noopener noreferrer">
+       <img src="svg/bc.svg?v=20260925f" alt="Bandcamp" height="28"></a>
+     <button type="button" class="social-spoiler" id="social-spoiler" aria-expanded="false" aria-controls="social-more" title="Ещё соцсети">
+       <span class="social-spoiler__dots" aria-hidden="true">···</span>
+       <span class="visually-hidden">Ещё</span>
+     </button>
+    </div>
+    <div class="site-footer__more" id="social-more" data-open="false">
+      <div class="site-footer__more-inner">
+       <a href="https://www.youtube.com/@0737asmr" target="_blank" rel="noopener noreferrer">
+         <img src="svg/You.svg?v=20260925f" alt="YouTube" height="20"></a>
+       <a href="#" class="social-placeholder" data-network="reddit" target="_blank" rel="noopener noreferrer" title="Reddit — ссылка позже">
+         <img src="svg/reddit.svg?v=20260925f" alt="Reddit" height="28"></a>
+       <a href="#" class="social-placeholder" data-network="pinterest" target="_blank" rel="noopener noreferrer" title="Pinterest — ссылка позже">
+         <img src="svg/P.svg?v=20260925f" alt="Pinterest" height="28"></a>
+       <a href="#" class="social-placeholder" data-network="instagram" target="_blank" rel="noopener noreferrer" title="Instagram — ссылка позже">
+         <img src="svg/instagram.svg?v=20260925f" alt="Instagram" height="28"></a>
+       <a href="#" class="social-placeholder" data-network="soundcloud" target="_blank" rel="noopener noreferrer" title="SoundCloud — ссылка позже">
+         <img src="svg/soundcloud.svg?v=20260925f" alt="SoundCloud" height="28"></a>
+       <!-- hidden for now: tiktok
+       <a href="#" class="social-placeholder" data-network="tiktok" target="_blank" rel="noopener noreferrer" title="TikTok — ссылка позже">
+         <img src="svg/tiktok.svg?v=20260925f" alt="TikTok" height="28"></a>
+       -->
+       <a href="#" class="social-placeholder" data-network="objkt" target="_blank" rel="noopener noreferrer" title="objkt.com — ссылка позже">
+         <img class="objkt-icon" src="svg/objkt.svg?v=20260925circle" alt="objkt" height="28" width="28"></a>
+       <a href="#" class="social-placeholder" data-network="500px" target="_blank" rel="noopener noreferrer" title="500px — ссылка позже">
+         <img src="svg/500px.svg?v=20260925f" alt="500px" height="28"></a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  var btn = document.getElementById('social-spoiler');
+  var more = document.getElementById('social-more');
+  var footer = document.getElementById('site-footer');
+  if (!btn || !more || !footer) return;
+  btn.addEventListener('click', function () {
+    var open = more.getAttribute('data-open') === 'true';
+    open = !open;
+    more.setAttribute('data-open', open ? 'true' : 'false');
+    footer.setAttribute('data-open', open ? 'true' : 'false');
+    btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    btn.classList.toggle('is-open', open);
+  });
+})();
+</script>
+
+
+</body>
+</html>
+
+
+

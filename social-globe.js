@@ -473,13 +473,40 @@
       return 1 / Math.max(rPx, 1);
     }
     // pinch/wheel: icon size; Bayer density (cells/px from center), not corner UV scale
-    // default = min pinch so icons start smallest
     var ICON_MIN = 0.55;
     var ICON_MAX = 1.9;
-    var iconScale = ICON_MIN;
+    // Adaptive start: desktop near min; tablet/phone (coarse / narrow / high DPR) larger
+    function defaultIconScale() {
+      var dpr = window.devicePixelRatio || 1;
+      if (dpr > 3) dpr = 3;
+      var shortSide = Math.min(window.innerWidth || 360, window.innerHeight || 360);
+      var coarse = false;
+      try { coarse = window.matchMedia('(pointer: coarse)').matches; } catch (e0) {}
+      var scale = ICON_MIN;
+      if (coarse || shortSide < 920) scale = 1.12;
+      if (dpr > 1.25) scale *= 1 + Math.min(0.4, (dpr - 1) * 0.22);
+      if (scale < ICON_MIN) scale = ICON_MIN;
+      if (scale > ICON_MAX) scale = ICON_MAX;
+      return scale;
+    }
+    var iconScale = defaultIconScale();
     var pinchStartDist = 0;
-    var pinchStartScale = ICON_MIN;
+    var pinchStartScale = iconScale;
     var pinching = false;
+
+    function refreshAdaptiveIconScale() {
+      if (pinching) return;
+      var next = defaultIconScale();
+      // lift undersized defaults after rotate; don't shrink a user pinch-up
+      if (next > iconScale) iconScale = next;
+      pinchStartScale = iconScale;
+    }
+    window.addEventListener('orientationchange', function () {
+      setTimeout(refreshAdaptiveIconScale, 180);
+    });
+    window.addEventListener('resize', function () {
+      refreshAdaptiveIconScale();
+    });
 
     function touchDist(ev) {
       if (!ev.touches || ev.touches.length < 2) return 0;

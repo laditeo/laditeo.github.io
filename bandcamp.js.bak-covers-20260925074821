@@ -1,0 +1,281 @@
+(function () {
+  var albums = [
+    {
+      id: 2889438942,
+      title: "Живот",
+      artist: "Тѯо Лад",
+      art: "https://f4.bcbits.com/img/a2129392431_7.jpg",
+      url: "https://laditeo.bandcamp.com/album/--2",
+      dark: true,
+      accent: "#4ec5ec",
+      tracks: [
+        { title: "Охота на Опыт", time: "03:33" },
+        { title: "Твори", time: "04:09" },
+        { title: "Гуляй", time: "05:20" },
+        { title: "Исследуй", time: "03:44" },
+        { title: "Мечтай", time: "02:19" },
+        { title: "Будь Здоров!", time: "02:48" },
+        { title: "Это", time: "01:09" },
+        { title: "Петрушка", time: "04:34" }
+      ]
+    },
+    {
+      id: 1231863933,
+      title: "ЗвукоГрад",
+      artist: "Тѯо Лад",
+      art: "https://f4.bcbits.com/img/a2687251943_7.jpg",
+      url: "https://laditeo.bandcamp.com/album/--3",
+      dark: false,
+      accent: "#63b2cc",
+      tracks: [
+        { title: "Банан", time: "02:16" },
+        { title: "Бибика", time: "05:50" },
+        { title: "Быстрее Света", time: "03:14" },
+        { title: "Фиолетовые Кристаллы", time: "04:47" },
+        { title: "Пустота", time: "05:28" },
+        { title: "Чернила", time: "04:22" },
+        { title: "Хокаге /w quiescis", time: "02:27" },
+        { title: "Плоттер", time: "05:01" },
+        { title: "Домой", time: "04:01" }
+      ]
+    },
+    {
+      id: 3760153090,
+      title: "808",
+      artist: "Тѯо Лад",
+      art: "https://f4.bcbits.com/img/a3750529546_7.jpg",
+      url: "https://laditeo.bandcamp.com/album/808",
+      dark: true,
+      accent: "#e99708",
+      tracks: [
+        { title: "Хулус Хумус", time: "00:53" },
+        { title: "Облака", time: "03:12" },
+        { title: "Пирамидка", time: "01:04" },
+        { title: "Верту", time: "01:09" },
+        { title: "Ѥра Лаш", time: "01:29" },
+        { title: "Майн Фонк", time: "03:35" },
+        { title: "Поп Корн", time: "02:39" }
+      ]
+    },
+    {
+      id: 2453211782,
+      title: "クラス",
+      artist: "Тѯо Лад",
+      art: "https://f4.bcbits.com/img/a0344593148_7.jpg",
+      url: "https://laditeo.bandcamp.com/album/-",
+      dark: false,
+      accent: "#e99708",
+      tracks: [
+        { title: "Блины с Черникой", time: "03:04" },
+        { title: "Ирий Сад", time: "03:43" },
+        { title: "Кипрей", time: "04:13" },
+        { title: "Школа", time: "02:45" },
+        { title: "История", time: "01:46" },
+        { title: "Время", time: "01:56" }
+      ]
+    }
+  ];
+
+  var player = {
+    audio: null,
+    albumId: null,
+    trackIndex: null,
+    card: null
+  };
+
+  function getAudio() {
+    if (!player.audio) {
+      player.audio = document.createElement("audio");
+      player.audio.preload = "none";
+      player.audio.addEventListener("timeupdate", onTimeUpdate);
+      player.audio.addEventListener("ended", onEnded);
+      player.audio.addEventListener("error", onError);
+      player.audio.addEventListener("play", function () {
+        setActiveCard(player.albumId);
+      });
+      player.audio.addEventListener("pause", function () {
+        setActiveCard(player.albumId);
+      });
+      document.body.appendChild(player.audio);
+    }
+    return player.audio;
+  }
+
+  function mergeStreams(streamData) {
+    if (!streamData || !streamData.albums) return;
+    albums.forEach(function (album) {
+      var remote = streamData.albums[String(album.id)];
+      if (!remote || !remote.tracks) return;
+      album.tracks.forEach(function (track, index) {
+        if (remote.tracks[index] && remote.tracks[index].stream) {
+          track.stream = remote.tracks[index].stream;
+        }
+      });
+    });
+  }
+
+  function renderBandcampCards(container) {
+    if (!container) return;
+
+    container.innerHTML = albums.map(function (album) {
+      var themeClass = album.dark ? "bc-card--dark" : "bc-card--light";
+      var tracks = album.tracks.map(function (track, index) {
+        return (
+          '<li class="bc-track" data-album-id="' + album.id + '" data-track-index="' + index + '" role="button" tabindex="0">' +
+            '<span class="bc-track-num">' + (index + 1) + ".</span>" +
+            '<span class="bc-track-title">' + track.title + "</span>" +
+            '<span class="bc-track-time">' + track.time + "</span>" +
+          "</li>"
+        );
+      }).join("");
+
+      return (
+        '<article class="bc-card ' + themeClass + '" data-album-id="' + album.id + '" style="--bc-accent:' + album.accent + '">' +
+          '<button type="button" class="bc-cover" data-album-id="' + album.id + '" aria-label="Play ' + album.title + '">' +
+            '<img src="' + album.art + '" alt="' + album.title + ' cover" loading="lazy">' +
+            '<span class="bc-play" aria-hidden="true"></span>' +
+          "</button>" +
+          '<div class="bc-meta">' +
+            '<a class="bc-title" href="' + album.url + '" target="_blank" rel="noopener">' + album.title + "</a>" +
+            '<p class="bc-artist">by ' + album.artist + "</p>" +
+          "</div>" +
+          '<div class="bc-progress" aria-hidden="true"><span></span></div>' +
+          '<ol class="bc-tracklist">' + tracks + "</ol>" +
+          '<div class="bc-actions">' +
+            '<a href="' + album.url + '" target="_blank" rel="noopener">listen on bandcamp</a>' +
+          "</div>" +
+        "</article>"
+      );
+    }).join("");
+
+    bindPlayerEvents(container);
+  }
+
+  function bindPlayerEvents(container) {
+    container.addEventListener("click", function (event) {
+      var cover = event.target.closest(".bc-cover");
+      if (cover) {
+        event.preventDefault();
+        var albumId = Number(cover.dataset.albumId);
+        if (player.albumId === albumId && !player.audio.paused) {
+          pausePlayback();
+        } else {
+          playTrack(albumId, 0);
+        }
+        return;
+      }
+
+      var track = event.target.closest(".bc-track");
+      if (track) {
+        event.preventDefault();
+        playTrack(Number(track.dataset.albumId), Number(track.dataset.trackIndex));
+      }
+    });
+
+    container.addEventListener("keydown", function (event) {
+      if (event.key !== "Enter" && event.key !== " ") return;
+      var track = event.target.closest(".bc-track");
+      if (!track) return;
+      event.preventDefault();
+      playTrack(Number(track.dataset.albumId), Number(track.dataset.trackIndex));
+    });
+  }
+
+  function findAlbum(albumId) {
+    return albums.find(function (album) {
+      return album.id === albumId;
+    });
+  }
+
+  function setActiveCard(albumId) {
+    document.querySelectorAll(".bc-card").forEach(function (card) {
+      var isActive = Number(card.dataset.albumId) === albumId;
+      card.classList.toggle("bc-card--playing", isActive && player.audio && !player.audio.paused);
+    });
+    document.querySelectorAll(".bc-track").forEach(function (row) {
+      var isActive =
+        Number(row.dataset.albumId) === albumId &&
+        Number(row.dataset.trackIndex) === player.trackIndex;
+      row.classList.toggle("bc-track--active", isActive);
+    });
+  }
+
+  function playTrack(albumId, trackIndex) {
+    var album = findAlbum(albumId);
+    if (!album || !album.tracks[trackIndex]) return;
+
+    var track = album.tracks[trackIndex];
+    if (!track.stream) {
+      window.open(album.url, "_blank", "noopener");
+      return;
+    }
+
+    var audio = getAudio();
+    player.albumId = albumId;
+    player.trackIndex = trackIndex;
+    player.card = document.querySelector('.bc-card[data-album-id="' + albumId + '"]');
+
+    if (audio.src !== track.stream) {
+      audio.src = track.stream;
+    }
+
+    audio.play().catch(function () {
+      window.open(album.url, "_blank", "noopener");
+    });
+    setActiveCard(albumId);
+  }
+
+  function pausePlayback() {
+    if (player.audio) {
+      player.audio.pause();
+    }
+    setActiveCard(player.albumId);
+  }
+
+  function onTimeUpdate() {
+    if (!player.card || !player.audio.duration) return;
+    var progress = player.card.querySelector(".bc-progress span");
+    if (progress) {
+      progress.style.width = ((player.audio.currentTime / player.audio.duration) * 100) + "%";
+    }
+  }
+
+  function onEnded() {
+    var album = findAlbum(player.albumId);
+    if (!album) return;
+    var nextIndex = player.trackIndex + 1;
+    if (nextIndex < album.tracks.length) {
+      playTrack(player.albumId, nextIndex);
+      return;
+    }
+    player.audio.currentTime = 0;
+    pausePlayback();
+  }
+
+  function onError() {
+    var album = findAlbum(player.albumId);
+    if (album) {
+      window.open(album.url, "_blank", "noopener");
+    }
+  }
+
+  function init() {
+    var grid = document.getElementById("bandcamp-grid");
+    if (!grid) return;
+
+    fetch("./bandcamp-streams.json")
+      .then(function (response) {
+        if (!response.ok) throw new Error("streams unavailable");
+        return response.json();
+      })
+      .then(function (data) {
+        mergeStreams(data);
+        renderBandcampCards(grid);
+      })
+      .catch(function () {
+        renderBandcampCards(grid);
+      });
+  }
+
+  init();
+})();

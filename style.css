@@ -262,6 +262,8 @@ a.current {
 }
 
 .feya-stage #myCanvas {
+  /* prefer sRGB compositing where the UA honors it */
+  color-scheme: only light;
   z-index: 2;
   cursor: all-scroll;
   touch-action: none;
@@ -1152,7 +1154,7 @@ body.reel-page {
 .feya-debug-spoiler.is-visible,
 .feya-debug-spoiler[open] {
   /* [open] keeps panel in flow even if camera faces front */
-  max-height: 900px;
+  max-height: 2200px;
   margin: 22px auto 10px; /* a bit lower under the fairy stage */
   opacity: 1;
   visibility: visible;
@@ -1193,8 +1195,64 @@ body.reel-page {
   letter-spacing: 0.05em;
   line-height: 1;
 }
-.feya-debug-spoiler .feya-light-debug {
+.feya-debug-spoiler .feya-light-debug,
+.feya-debug-spoiler .feya-cam-panel,
+.feya-debug-spoiler .globe-light-debug {
   width: 100%;
+}
+
+/* Nested spoilers inside ··· (cam / light / globe) */
+.feya-debug-spoiler__panels {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 4px 0 2px;
+}
+.feya-sub-spoiler {
+  width: 100%;
+  box-sizing: border-box;
+  border-radius: 14px;
+  background: rgba(0, 0, 0, 0.03);
+  border: 1px solid rgba(26, 81, 103, 0.18);
+  overflow: hidden;
+}
+.feya-sub-spoiler > summary {
+  list-style: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 30px;
+  padding: 6px 12px;
+  margin: 0;
+  font: 11px/1.2 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  letter-spacing: 0.04em;
+  text-transform: lowercase;
+  color: rgb(26, 81, 103);
+  user-select: none;
+  background: #f4f8f9;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+.feya-sub-spoiler > summary::-webkit-details-marker { display: none; }
+.feya-sub-spoiler > summary:hover {
+  background: #e7f2f4;
+}
+.feya-sub-spoiler[open] > summary {
+  background: rgba(26, 81, 103, 0.12);
+  border-bottom: 1px solid rgba(26, 81, 103, 0.15);
+  margin-bottom: 0;
+}
+.feya-sub-spoiler .feya-cam-panel,
+.feya-sub-spoiler .feya-light-debug,
+.feya-sub-spoiler .globe-light-debug {
+  margin: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
 /* globe debug under sphere — hidden for now */

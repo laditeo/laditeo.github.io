@@ -37,13 +37,30 @@
       }
 
       //Renderer
-      var renderer = new THREE.WebGLRenderer({
-        antialias: false,
-        canvas: myCanvas,
-		alpha: true,
-		powerPreference: 'high-performance'
-      });
-
+      // Force sRGB drawing buffer when the browser supports it — otherwise
+		// Display-P3 / HDR panels (many Android / iOS / wide-gamut Windows) grade
+		// ACES output differently from a plain sRGB monitor.
+		var _glAttrs = {
+			alpha: true,
+			antialias: false,
+			powerPreference: 'high-performance',
+			colorSpace: 'srgb'
+		};
+		var _gl = null;
+		try { _gl = myCanvas.getContext('webgl2', _glAttrs); } catch (eGl2) { _gl = null; }
+		if (!_gl) {
+			try { _gl = myCanvas.getContext('webgl', _glAttrs) || myCanvas.getContext('experimental-webgl', _glAttrs); } catch (eGl) { _gl = null; }
+		}
+		var renderer = _gl
+			? new THREE.WebGLRenderer({ canvas: myCanvas, context: _gl, alpha: true, antialias: false })
+			: new THREE.WebGLRenderer({ canvas: myCanvas, alpha: true, antialias: false, powerPreference: 'high-performance' });
+		try {
+			var _ctx = renderer.getContext();
+			if (_ctx) {
+				if ('drawingBufferColorSpace' in _ctx) _ctx.drawingBufferColorSpace = 'srgb';
+				if ('unpackColorSpace' in _ctx) _ctx.unpackColorSpace = 'srgb';
+			}
+		} catch (eCs) {}
 
 		//renderer.setClearColor(0x000000);
 		// Low internal res + CSS upscale (no post filter) — cheap PS1 pixels
@@ -54,9 +71,15 @@
 		renderer.setClearColor(0x000000, 0);
 		renderer.shadowMap.enabled = true;
     	renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-		// Fixed look vs OS HDR on/off (r137: outputEncoding; SRGBColorSpace is newer)
+		// Fixed look vs OS HDR / wide-gamut (r137: outputEncoding; SRGBColorSpace is newer)
 		renderer.toneMapping = THREE.ACESFilmicToneMapping;
 		renderer.toneMappingExposure = 1.0;
+		try {
+			if (window.matchMedia && window.matchMedia('(dynamic-range: high)').matches) {
+				// HDR compositing often lifts midtones — pull exposure slightly
+				renderer.toneMappingExposure = 0.92;
+			}
+		} catch (eHdr) {}
 		if ('outputColorSpace' in renderer && THREE.SRGBColorSpace) {
 			renderer.outputColorSpace = THREE.SRGBColorSpace;
 		} else if (THREE.sRGBEncoding !== undefined) {
@@ -714,6 +737,89 @@
 		}
 	}
 
+	// Blender-like Auto Smooth: crease normals by angle (default 30°)
+	function feyaToCreasedNormals(geometry, creaseAngle) {
+		if (creaseAngle == null) creaseAngle = Math.PI / 6; // 30°
+		var creaseDot = Math.cos(creaseAngle);
+		var hashMultiplier = (1 + 1e-10) * 1e2;
+		var verts = [new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3()];
+		var tempVec1 = new THREE.Vector3();
+		var tempVec2 = new THREE.Vector3();
+		var tempNorm = new THREE.Vector3();
+		var tempNorm2 = new THREE.Vector3();
+		function hashVertex(v) {
+			return (~~(v.x * hashMultiplier)) + ',' + (~~(v.y * hashMultiplier)) + ',' + (~~(v.z * hashMultiplier));
+		}
+		var resultGeometry = geometry.index ? geometry.toNonIndexed() : geometry;
+		var posAttr = resultGeometry.attributes.position;
+		if (!posAttr) return geometry;
+		var vertexMap = {};
+		var i, l, n, k, i3;
+		for (i = 0, l = posAttr.count / 3; i < l; i++) {
+			i3 = 3 * i;
+			verts[0].fromBufferAttribute(posAttr, i3 + 0);
+			verts[1].fromBufferAttribute(posAttr, i3 + 1);
+			verts[2].fromBufferAttribute(posAttr, i3 + 2);
+			tempVec1.subVectors(verts[2], verts[1]);
+			tempVec2.subVectors(verts[0], verts[1]);
+			var normal = new THREE.Vector3().crossVectors(tempVec1, tempVec2).normalize();
+			for (n = 0; n < 3; n++) {
+				var hash = hashVertex(verts[n]);
+				if (!vertexMap[hash]) vertexMap[hash] = [];
+				vertexMap[hash].push(normal);
+			}
+		}
+		var normalArray = new Float32Array(posAttr.count * 3);
+		var normAttr = new THREE.BufferAttribute(normalArray, 3, false);
+		for (i = 0, l = posAttr.count / 3; i < l; i++) {
+			i3 = 3 * i;
+			verts[0].fromBufferAttribute(posAttr, i3 + 0);
+			verts[1].fromBufferAttribute(posAttr, i3 + 1);
+			verts[2].fromBufferAttribute(posAttr, i3 + 2);
+			tempVec1.subVectors(verts[2], verts[1]);
+			tempVec2.subVectors(verts[0], verts[1]);
+			tempNorm.crossVectors(tempVec1, tempVec2).normalize();
+			for (n = 0; n < 3; n++) {
+				var otherNormals = vertexMap[hashVertex(verts[n])];
+				tempNorm2.set(0, 0, 0);
+				for (k = 0; k < otherNormals.length; k++) {
+					if (tempNorm.dot(otherNormals[k]) > creaseDot) tempNorm2.add(otherNormals[k]);
+				}
+				tempNorm2.normalize();
+				normAttr.setXYZ(i3 + n, tempNorm2.x, tempNorm2.y, tempNorm2.z);
+			}
+		}
+		resultGeometry.setAttribute('normal', normAttr);
+		if (resultGeometry.attributes.tangent) resultGeometry.deleteAttribute('tangent');
+		return resultGeometry;
+	}
+	function applyFeyaAutoSmooth(root) {
+		// Only wings + kokoshnik (coco) — keep body/character shading as authored
+		function isWingOrCoco(obj) {
+			var n = (obj.name || '');
+			var p = (obj.parent && obj.parent.name) || '';
+			return /^(coco|wings)(\.\d+)?$/i.test(n) || /^(coco|wings)(\.\d+)?$/i.test(p);
+		}
+		var skipped = 0, done = 0;
+		root.traverse(function (obj) {
+			if (!obj.isMesh || !obj.geometry) return;
+			if (!isWingOrCoco(obj)) { skipped++; return; }
+			var mats = Array.isArray(obj.material) ? obj.material : [obj.material];
+			for (var mi = 0; mi < mats.length; mi++) {
+				if (!mats[mi]) continue;
+				mats[mi].flatShading = false;
+				mats[mi].needsUpdate = true;
+			}
+			try {
+				obj.geometry = feyaToCreasedNormals(obj.geometry, Math.PI / 6);
+				done++;
+			} catch (err) {
+				console.warn('[feya] auto-smooth failed', obj.name, err);
+			}
+		});
+		console.info('[feya] auto-smooth wings/coco', done, 'meshes (skip', skipped + ')');
+	}
+
 	function applyPS1ToObject(root) {
 		root.traverse(function (obj) {
 			if (!obj.isMesh) return;
@@ -723,6 +829,21 @@
 				if ('vertexColors' in mats[i] && mats[i].vertexColors !== undefined) {
 					if (obj.geometry && obj.geometry.attributes && obj.geometry.attributes.color) {
 						mats[i].vertexColors = true;
+					}
+				}
+				// Cross-browser: color/emissive maps must be tagged sRGB (Android/iOS often differ if not)
+				if (THREE.sRGBEncoding !== undefined) {
+					var _maps = ['map', 'emissiveMap'];
+					for (var mi = 0; mi < _maps.length; mi++) {
+						var tex = mats[i][_maps[mi]];
+						if (tex && tex.encoding !== undefined && tex.encoding !== THREE.sRGBEncoding) {
+							tex.encoding = THREE.sRGBEncoding;
+							tex.needsUpdate = true;
+						}
+						if (tex && tex.colorSpace !== undefined && THREE.SRGBColorSpace && tex.colorSpace !== THREE.SRGBColorSpace) {
+							tex.colorSpace = THREE.SRGBColorSpace;
+							tex.needsUpdate = true;
+						}
 					}
 				}
 				// wings / coco / glow parts — emissiveMap (Material.002)
@@ -859,6 +980,7 @@
     mesh.position.y = -4.7;
 		applyPS1ToObject(mesh);
 		bindCpuMorphs(mesh);
+		applyFeyaAutoSmooth(mesh);
 		var emisEl = document.getElementById('fld-emis');
 		applyFeyaEmissive(emisEl ? parseFloat(emisEl.value) : 1);
 		bootShadow = makeBootShadow();

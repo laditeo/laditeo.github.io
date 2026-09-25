@@ -1,0 +1,289 @@
+(function () {
+  'use strict';
+
+  function boot() {
+    if (typeof THREE === 'undefined') {
+      console.warn('[social-globe] waiting for THREE…');
+      setTimeout(boot, 50);
+      return;
+    }
+    init();
+  }
+
+  function init() {
+    if (window.__socialGlobeDispose) {
+      try { window.__socialGlobeDispose(); } catch (e) {}
+    }
+
+    var canvas = document.getElementById('social-globe-canvas');
+    if (!canvas) {
+      console.warn('[social-globe] canvas missing');
+      return;
+    }
+
+    var ICONS = [
+      { src: 'svg/VK.svg', href: 'https://vk.com/laditeo', label: 'VK' },
+      { src: 'svg/T.svg', href: 'https://t.me/laditeo', label: 'Telegram' },
+      { src: 'svg/twitter.svg', href: '#', label: 'Twitter' },
+      { src: 'svg/b.svg', href: 'https://bsky.app/profile/laditeo.art', label: 'Bluesky' },
+      { src: 'svg/a.svg', href: 'https://artstation.com/laditeo', label: 'ArtStation' },
+      { src: 'svg/bc.svg', href: 'https://laditeo.bandcamp.com', label: 'Bandcamp' },
+      { src: 'svg/You.svg', href: 'https://www.youtube.com/@0737asmr', label: 'YouTube' },
+      { src: 'svg/reddit.svg', href: '#', label: 'Reddit' },
+      { src: 'svg/P.svg', href: '#', label: 'Pinterest' },
+      { src: 'svg/instagram.svg', href: '#', label: 'Instagram' },
+      { src: 'svg/soundcloud.svg', href: '#', label: 'SoundCloud' },
+      { src: 'svg/objkt.svg', href: '#', label: 'objkt' },
+      { src: 'svg/500px.svg', href: '#', label: '500px' },
+      { src: 'svg/tiktok.svg', href: '#', label: 'TikTok' }
+    ];
+    var cloud = ICONS.concat(ICONS);
+
+    var scene = new THREE.Scene();
+    var camera = new THREE.PerspectiveCamera(38, 1, 0.1, 100);
+    camera.position.set(0, 0, 6.6);
+
+    var renderer = new THREE.WebGLRenderer({
+      canvas: canvas,
+      alpha: true,
+      antialias: true
+    });
+    renderer.setClearColor(0x000000, 0);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+
+    var group = new THREE.Group();
+    group.rotation.x = 0.22;
+    scene.add(group);
+
+    var RADIUS = 2.2;
+    var BASE = 0.85;
+    var sprites = [];
+
+    function fibonacciPoints(count, radius) {
+      var pts = [];
+      var golden = Math.PI * (3 - Math.sqrt(5));
+      for (var i = 0; i < count; i++) {
+        var y = 1 - (i / Math.max(count - 1, 1)) * 2;
+        var r = Math.sqrt(Math.max(0, 1 - y * y));
+        var theta = golden * i + 0.35;
+        pts.push(new THREE.Vector3(
+          Math.cos(theta) * r * radius,
+          y * radius,
+          Math.sin(theta) * r * radius
+        ));
+      }
+      return pts;
+    }
+
+    var points = fibonacciPoints(cloud.length, RADIUS);
+
+    function loadTexture(url) {
+      return new Promise(function (resolve, reject) {
+        var img = new Image();
+        img.decoding = 'async';
+        img.onload = function () {
+          var size = 128;
+          var c = document.createElement('canvas');
+          c.width = size;
+          c.height = size;
+          var ctx = c.getContext('2d');
+          ctx.clearRect(0, 0, size, size);
+          // contain letterbox
+          var scale = Math.min(size / img.width, size / img.height) * 0.86;
+          var w = img.width * scale;
+          var h = img.height * scale;
+          ctx.drawImage(img, (size - w) / 2, (size - h) / 2, w, h);
+          var tex = new THREE.CanvasTexture(c);
+          tex.minFilter = THREE.LinearFilter;
+          tex.magFilter = THREE.LinearFilter;
+          tex.needsUpdate = true;
+          resolve(tex);
+        };
+        img.onerror = reject;
+        img.src = url;
+      });
+    }
+
+    function placeholderTexture(label) {
+      var size = 128;
+      var c = document.createElement('canvas');
+      c.width = size;
+      c.height = size;
+      var ctx = c.getContext('2d');
+      ctx.fillStyle = '#1a5167';
+      ctx.beginPath();
+      ctx.arc(64, 64, 56, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 28px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText((label || '?').slice(0, 2), 64, 66);
+      var tex = new THREE.CanvasTexture(c);
+      tex.needsUpdate = true;
+      return tex;
+    }
+
+    cloud.forEach(function (item, idx) {
+      loadTexture(item.src).catch(function () {
+        return placeholderTexture(item.label);
+      }).then(function (texture) {
+        var material = new THREE.SpriteMaterial({
+          map: texture,
+          transparent: true,
+          depthWrite: false,
+          opacity: 0.95
+        });
+        var sprite = new THREE.Sprite(material);
+        sprite.position.copy(points[idx]);
+        sprite.scale.set(BASE, BASE, 1);
+        sprite.userData = { href: item.href, label: item.label, base: BASE };
+        group.add(sprite);
+        sprites.push(sprite);
+      });
+    });
+
+    function resize() {
+      var parent = canvas.parentElement;
+      var size = Math.min(parent ? parent.clientWidth : 500, 560);
+      if (size < 160) size = 320;
+      renderer.setSize(size, size, false);
+      camera.aspect = 1;
+      camera.updateProjectionMatrix();
+    }
+    resize();
+
+    var dragging = false;
+    var lastX = 0;
+    var lastY = 0;
+    var velX = 0;
+    var velY = 0;
+    var idle = true;
+    var moved = false;
+
+    function onDown(ev) {
+      dragging = true;
+      idle = false;
+      moved = false;
+      var p = ev.touches ? ev.touches[0] : ev;
+      lastX = p.clientX;
+      lastY = p.clientY;
+      velX = 0;
+      velY = 0;
+      if (canvas.setPointerCapture && ev.pointerId != null) {
+        try { canvas.setPointerCapture(ev.pointerId); } catch (e) {}
+      }
+    }
+    function onMove(ev) {
+      if (!dragging) return;
+      var p = ev.touches ? ev.touches[0] : ev;
+      var dx = p.clientX - lastX;
+      var dy = p.clientY - lastY;
+      if (Math.abs(dx) + Math.abs(dy) > 2) moved = true;
+      lastX = p.clientX;
+      lastY = p.clientY;
+      group.rotation.y += dx * 0.008;
+      group.rotation.x += dy * 0.008;
+      group.rotation.x = Math.max(-1, Math.min(1, group.rotation.x));
+      velX = dx * 0.008;
+      velY = dy * 0.008;
+      if (ev.cancelable) ev.preventDefault();
+    }
+    function onUp() { dragging = false; idle = true; }
+
+    canvas.addEventListener('pointerdown', onDown);
+    canvas.addEventListener('pointermove', onMove);
+    canvas.addEventListener('pointerup', onUp);
+    canvas.addEventListener('pointercancel', onUp);
+    canvas.addEventListener('pointerleave', onUp);
+
+    var raycaster = new THREE.Raycaster();
+    var pointer = new THREE.Vector2();
+    canvas.addEventListener('click', function (ev) {
+      if (moved) return;
+      var rect = canvas.getBoundingClientRect();
+      pointer.x = ((ev.clientX - rect.left) / rect.width) * 2 - 1;
+      pointer.y = -((ev.clientY - rect.top) / rect.height) * 2 + 1;
+      raycaster.setFromCamera(pointer, camera);
+      var hits = raycaster.intersectObjects(sprites, false);
+      if (!hits.length) return;
+      hits.sort(function (a, b) {
+        return (b.object.material.opacity || 0) - (a.object.material.opacity || 0);
+      });
+      var href = hits[0].object.userData.href;
+      if (!href || href === '#') return;
+      window.open(href, '_blank', 'noopener,noreferrer');
+    });
+
+    var worldPos = new THREE.Vector3();
+    var viewPos = new THREE.Vector3();
+    var running = true;
+    var raf = 0;
+
+    function tick() {
+      if (!running) return;
+      raf = requestAnimationFrame(tick);
+      if (!dragging) {
+        group.rotation.y += velX;
+        group.rotation.x += velY;
+        group.rotation.x = Math.max(-1, Math.min(1, group.rotation.x));
+        velX *= 0.935;
+        velY *= 0.935;
+        if (idle && Math.abs(velX) < 0.0007 && Math.abs(velY) < 0.0007) {
+          group.rotation.y += 0.0024;
+        }
+      }
+      group.updateMatrixWorld(true);
+      for (var s = 0; s < sprites.length; s++) {
+        var sprite = sprites[s];
+        sprite.getWorldPosition(worldPos);
+        viewPos.copy(worldPos).applyMatrix4(camera.matrixWorldInverse);
+        var z = -viewPos.z;
+        var t = 1 - (z - 4.2) / 4.6;
+        if (t < 0) t = 0;
+        if (t > 1) t = 1;
+        t = t * t * (3 - 2 * t);
+        var scale = sprite.userData.base * (0.38 + t * 0.95);
+        sprite.scale.set(scale, scale, 1);
+        sprite.material.opacity = 0.18 + t * 0.82;
+        sprite.renderOrder = Math.round(t * 200);
+      }
+      renderer.render(scene, camera);
+    }
+    tick();
+
+    var ro = null;
+    if (window.ResizeObserver) {
+      ro = new ResizeObserver(resize);
+      ro.observe(canvas.parentElement || canvas);
+    } else {
+      window.addEventListener('resize', resize);
+    }
+
+    console.info('[social-globe] ready');
+    window.__socialGlobeDispose = function () {
+      running = false;
+      cancelAnimationFrame(raf);
+      canvas.removeEventListener('pointerdown', onDown);
+      canvas.removeEventListener('pointermove', onMove);
+      canvas.removeEventListener('pointerup', onUp);
+      canvas.removeEventListener('pointercancel', onUp);
+      canvas.removeEventListener('pointerleave', onUp);
+      if (ro) ro.disconnect();
+      else window.removeEventListener('resize', resize);
+      sprites.forEach(function (sp) {
+        if (sp.material.map) sp.material.map.dispose();
+        sp.material.dispose();
+        group.remove(sp);
+      });
+      renderer.dispose();
+      window.__socialGlobeDispose = null;
+    };
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', boot);
+  } else {
+    boot();
+  }
+})();
